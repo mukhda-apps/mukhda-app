@@ -314,6 +314,11 @@ public final class TemplateEngine {
         p.setTextAlign(Paint.Align.CENTER);
         p.setShadowLayer(8f, 0f, 3f, 0x80000000);
         float y = h * (idx % 2 == 0 ? 0.16f : 0.82f);
+        float tw = p.measureText(line);
+        Paint pill = new Paint(Paint.ANTI_ALIAS_FLAG);
+        pill.setColor(Color.BLACK);
+        pill.setAlpha((int) (70 * pop));
+        canvas.drawRoundRect(new RectF(w / 2f - tw / 2f - 28f, y - p.getTextSize() * 0.85f, w / 2f + tw / 2f + 28f, y + p.getTextSize() * 0.45f), 30f, 30f, pill);
         canvas.drawText(line, w / 2f, y, p);
     }
 
