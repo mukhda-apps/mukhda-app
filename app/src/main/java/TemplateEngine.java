@@ -244,6 +244,19 @@ public final class TemplateEngine {
         canvas.drawText("Mukhda", w - 24, h - 24, p);
     }
 
+    public static void applyOverrides(android.content.Context ctx, String projectId) {
+        if (ctx == null || projectId == null) {
+            fxOverride = null;
+            filterOverride = null;
+            return;
+        }
+        android.content.SharedPreferences sp = ctx.getSharedPreferences("mukhda", 0);
+        String fx = sp.getString("fx_" + projectId, null);
+        String fl = sp.getString("filter_" + projectId, null);
+        fxOverride = (fx == null || "none".equals(fx)) ? null : fx;
+        filterOverride = (fl == null || "none".equals(fl)) ? null : fl;
+    }
+
     public static ColorMatrix filterMatrix(String name) {
         if (name == null || "none".equals(name)) return null;
         ColorMatrix cm = new ColorMatrix();

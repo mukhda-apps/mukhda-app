@@ -1,4 +1,6 @@
 package com.mukhda.editor;
+import android.graphics.Bitmap;
+import android.media.MediaPlayer;
 
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -78,6 +80,8 @@ public final class EditorActivity extends AppCompatActivity {
     public TextView playBtn;
     public FrameLayout playerHost;
     public PlayerView playerView;
+    public TemplateView templateView;
+    public MediaPlayer templateMusic;
     public Preview preview;
     public ProgressDialog progress;
     public Project project;
@@ -557,6 +561,47 @@ public final class EditorActivity extends AppCompatActivity {
             playerView = null;
         }
         frameLayout3.addView(playerView);
+        Project tproj = this.project;
+        final TemplateSpec templateSpec = tproj == null ? null : TemplateSpec.byId(tproj.getTemplateId());
+        if (templateSpec != null) {
+            playerView.setVisibility(8);
+            final TemplateView templateView2 = new TemplateView(editorActivity);
+            this.templateView = templateView2;
+            templateView2.setTemplate(templateSpec, null);
+            FrameLayout frameLayout7 = this.playerHost;
+            if (frameLayout7 == null) {
+                Intrinsics.throwUninitializedPropertyAccessException("playerHost");
+                frameLayout7 = null;
+            }
+            frameLayout7.addView(templateView2, 0, new FrameLayout.LayoutParams(UiKt.getMATCH(), UiKt.getMATCH()));
+            TemplateEngine.applyOverrides(editorActivity, tproj.getId());
+            final Project fproj = tproj;
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    final java.util.List<Bitmap> bmps = TemplatePhotos.load(editorActivity, fproj.getClips(), 540, 960);
+                    templateView2.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            templateView2.setTemplate(templateSpec, bmps);
+                            templateView2.play();
+                        }
+                    });
+                }
+            }).start();
+            if (tproj.getMusicUri() != null) {
+                try {
+                    MediaPlayer mp = new MediaPlayer();
+                    mp.setDataSource(editorActivity, Uri.parse(tproj.getMusicUri()));
+                    mp.setLooping(true);
+                    mp.prepare();
+                    mp.start();
+                    this.templateMusic = mp;
+                } catch (Exception e) {
+                    this.templateMusic = null;
+                }
+            }
+        }
         ImageView imageView = new ImageView(editorActivity);
         imageView.setId(R.id.dummy_image);
         imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
@@ -725,7 +770,7 @@ public final class EditorActivity extends AppCompatActivity {
         }
         scrollView.addView(linearLayout5);
         linearLayout.addView(scrollView, UiKt.lp$default(UiKt.getMATCH(), UiKt.dp(editorActivity, 200), 0.0f, 4, null));
-        List<Pair> listOf = CollectionsKt.listOf(new Pair[]{TuplesKt.to("add", "＋\nAdd"), TuplesKt.to("split", "✂\nSplit"), TuplesKt.to("trim", "⇔\nTrim"), TuplesKt.to("speed", "⏱\nSpeed"), TuplesKt.to(EXTRA_CAPTIONS, "Ａ\nCaptions"), TuplesKt.to("text", "T\nText"), TuplesKt.to("filters", "◐\nFilters"), TuplesKt.to(MimeTypes.BASE_TYPE_AUDIO, "♪\nAudio"), TuplesKt.to("delete", "🗑\nDelete")});
+        List<Pair> listOf = CollectionsKt.listOf(new Pair[]{TuplesKt.to("add", "＋\nAdd"), TuplesKt.to("split", "✂\nSplit"), TuplesKt.to("trim", "⇔\nTrim"), TuplesKt.to("speed", "⏱\nSpeed"), TuplesKt.to(EXTRA_CAPTIONS, "Ａ\nCaptions"), TuplesKt.to("text", "T\nText"), TuplesKt.to(MimeTypes.BASE_TYPE_AUDIO, "\u266a\nMusic"), TuplesKt.to("effects", "\u2728\nEffects"), TuplesKt.to("filters", "\u25d0\nFilters"), TuplesKt.to("delete", "🗑\nDelete")});
         LinearLayout linearLayout6 = new LinearLayout(editorActivity);
         linearLayout6.setPadding(UiKt.dp(editorActivity, 6), UiKt.dp(editorActivity, 4), UiKt.dp(editorActivity, 6), UiKt.dp(EditorActivity.this, 8));
         for (Pair pair : listOf) {
@@ -1332,6 +1377,11 @@ public final class EditorActivity extends AppCompatActivity {
     }
 
     public final void filtersPanel() {
+        Project fpProject = this.project;
+        if (fpProject != null && TemplateSpec.byId(fpProject.getTemplateId()) != null) {
+            templateFiltersPanel();
+            return;
+        }
         LinearLayout linearLayout = this.panel;
         if (linearLayout == null) {
             Intrinsics.throwUninitializedPropertyAccessException("panel");
@@ -1380,6 +1430,87 @@ public final class EditorActivity extends AppCompatActivity {
         }
         TextView[] textViewArr = (TextView[]) arrayList.toArray(new TextView[0]);
         linearLayout2.addView(row((View[]) Arrays.copyOf(textViewArr, textViewArr.length)));
+    }
+
+    public final void templateFiltersPanel() {
+        LinearLayout panel = this.panel;
+        if (panel == null) {
+            Intrinsics.throwUninitializedPropertyAccessException("panel");
+            panel = null;
+        }
+        final EditorActivity editorActivity = this;
+        panel.addView(UiKt.label$default(editorActivity, "Filter (live in preview)", 13.0f, C.INSTANCE.getDim(), false, 0, 24, null));
+        Project project = this.project;
+        if (project == null) {
+            Intrinsics.throwUninitializedPropertyAccessException("project");
+            project = null;
+        }
+        final Project fp = project;
+        String cur = project.getFilter();
+        String[] names = {"Original", "Warm", "Vivid", "Diya glow", "Rose", "B&W", "Noir", "Cool", "Sepia", "Fade", "Aqua", "Sunset", "Cinema"};
+        LinearLayout row2 = new LinearLayout(editorActivity);
+        for (int fi = 0; fi < TemplateEngine.FILTERS.length; fi++) {
+            final String f = TemplateEngine.FILTERS[fi];
+            row2.addView(UiKt.chip(editorActivity, names[fi], Intrinsics.areEqual(cur, f), new Function0<Unit>() {
+                @Override
+                public Unit invoke() {
+                    invoke2();
+                    return Unit.INSTANCE;
+                }
+
+                public final void invoke2() {
+                    Project copy = fp.copy(fp.id, fp.name, fp.clips, fp.captions, fp.captionStyle, fp.captionLang, fp.musicUri, fp.originalVolume, f, fp.templateId, fp.updatedAt);
+                    editorActivity.commit(copy);
+                    TemplateEngine.filterOverride = "none".equals(f) ? null : f;
+                    editorActivity.getSharedPreferences("mukhda", 0).edit().putString("filter_" + fp.getId(), f).apply();
+                    if (editorActivity.templateView != null) {
+                        editorActivity.templateView.invalidate();
+                    }
+                    editorActivity.showTool("filters");
+                }
+            }));
+        }
+        panel.addView(row2);
+    }
+
+    public final void effectsPanel() {
+        LinearLayout panel = this.panel;
+        if (panel == null) {
+            Intrinsics.throwUninitializedPropertyAccessException("panel");
+            panel = null;
+        }
+        final EditorActivity editorActivity = this;
+        panel.addView(UiKt.label$default(editorActivity, "Beat effect (live in preview)", 13.0f, C.INSTANCE.getDim(), false, 0, 24, null));
+        Project project = this.project;
+        if (project == null) {
+            Intrinsics.throwUninitializedPropertyAccessException("project");
+            project = null;
+        }
+        final Project fp = project;
+        String curFx = editorActivity.getSharedPreferences("mukhda", 0).getString("fx_" + fp.getId(), null);
+        String[] fxNames = {"None", "Punch", "Flash", "Shake", "Glitch", "Zoom pulse", "Shine"};
+        LinearLayout row2 = new LinearLayout(editorActivity);
+        for (int ei = 0; ei < TemplateEngine.EFFECTS.length; ei++) {
+            final String fx = TemplateEngine.EFFECTS[ei];
+            boolean sel = curFx == null ? "none".equals(fx) : fx.equals(curFx);
+            row2.addView(UiKt.chip(editorActivity, fxNames[ei], sel, new Function0<Unit>() {
+                @Override
+                public Unit invoke() {
+                    invoke2();
+                    return Unit.INSTANCE;
+                }
+
+                public final void invoke2() {
+                    editorActivity.getSharedPreferences("mukhda", 0).edit().putString("fx_" + fp.getId(), fx).apply();
+                    TemplateEngine.fxOverride = "none".equals(fx) ? null : fx;
+                    if (editorActivity.templateView != null) {
+                        editorActivity.templateView.invalidate();
+                    }
+                    editorActivity.showTool("effects");
+                }
+            }));
+        }
+        panel.addView(row2);
     }
 
     public final void generateCaptions(List<Clip> clips) {
@@ -2075,6 +2206,12 @@ public final class EditorActivity extends AppCompatActivity {
                     return;
                 }
                 return;
+            case -1833928446:
+                if (k.equals("effects")) {
+                    effectsPanel();
+                    return;
+                }
+                return;
             default:
                 return;
         }
@@ -2212,6 +2349,20 @@ public final class EditorActivity extends AppCompatActivity {
     }
 
     public final void togglePlay() {
+        if (this.templateView != null) {
+            if (this.templateView.isPlaying()) {
+                this.templateView.pause();
+                if (this.templateMusic != null) {
+                    try { this.templateMusic.pause(); } catch (Exception ignored) {}
+                }
+            } else {
+                this.templateView.play();
+                if (this.templateMusic != null) {
+                    try { this.templateMusic.start(); } catch (Exception ignored) {}
+                }
+            }
+            return;
+        }
         Preview preview = this.preview;
         Preview preview2 = null;
         if (preview == null) {
@@ -2623,6 +2774,13 @@ public final class EditorActivity extends AppCompatActivity {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        if (this.templateMusic != null) {
+            try { this.templateMusic.stop(); this.templateMusic.release(); } catch (Exception ignored) {}
+            this.templateMusic = null;
+        }
+        if (this.templateView != null) {
+            this.templateView.stop();
+        }
         Preview preview = this.preview;
         if (preview == null) {
             Intrinsics.throwUninitializedPropertyAccessException("preview");
@@ -2639,6 +2797,12 @@ public final class EditorActivity extends AppCompatActivity {
     @Override
     public void onPause() {
         super.onPause();
+        if (this.templateView != null) {
+            this.templateView.pause();
+        }
+        if (this.templateMusic != null) {
+            try { this.templateMusic.pause(); } catch (Exception ignored) {}
+        }
         Preview preview = this.preview;
         Project project = null;
         if (preview == null) {

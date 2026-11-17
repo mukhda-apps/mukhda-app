@@ -236,6 +236,7 @@ public final class Exporter {
     }
 
     public final Composition buildTemplateComposition(Context ctx, Project p, TemplateSpec spec) {
+        TemplateEngine.applyOverrides(ctx, p.getId());
         int width = 1080;
         int height = 1920;
         List<Bitmap> photos = TemplatePhotos.load(ctx, p.getClips(), width, height);
