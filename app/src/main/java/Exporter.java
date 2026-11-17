@@ -2,6 +2,7 @@ package com.mukhda.editor;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
@@ -111,6 +112,10 @@ public final class Exporter {
         Intrinsics.checkNotNullParameter(ctx, "ctx");
         Intrinsics.checkNotNullParameter(p, "p");
         Intrinsics.checkNotNullParameter(o, "o");
+        TemplateSpec templateSpec = TemplateSpec.byId(p.getTemplateId());
+        if (templateSpec != null) {
+            return buildTemplateComposition(ctx, p, templateSpec);
+        }
         Pair<Integer, Integer> outputSize = outputSize(ctx, p, o);
         int intValue = outputSize.component1().intValue();
         int intValue2 = outputSize.component2().intValue();
@@ -228,6 +233,36 @@ public final class Exporter {
         } catch (Exception unused) {
             return 1080;
         }
+    }
+
+    public final Composition buildTemplateComposition(Context ctx, Project p, TemplateSpec spec) {
+        int width = 1080;
+        int height = 1920;
+        List<Bitmap> photos = TemplatePhotos.load(ctx, p.getClips(), width, height);
+        long totalMs = spec.durationMs();
+        MediaItem base = new MediaItem.Builder().setUri(Uri.parse("asset:///blank.png")).setImageDurationMs(totalMs).build();
+        EditedMediaItem baseItem = new EditedMediaItem.Builder(base).setDurationUs(totalMs * 1000).setFrameRate(30).build();
+        ArrayList sequences = new ArrayList();
+        ArrayList baseList = new ArrayList();
+        baseList.add(baseItem);
+        sequences.add(new EditedMediaItemSequence(baseList));
+        if (p.getMusicUri() != null) {
+            Media media = Media.INSTANCE;
+            Uri parse = Uri.parse(p.getMusicUri());
+            Intrinsics.checkNotNullExpressionValue(parse, "parse(...)");
+            long videoDuration = media.videoDuration(ctx, parse);
+            boolean loop = 1 <= videoDuration && videoDuration < totalMs;
+            MediaItem.Builder uriBuilder = new MediaItem.Builder().setUri(p.getMusicUri());
+            if (!loop) {
+                uriBuilder.setClippingConfiguration(new MediaItem.ClippingConfiguration.Builder().setStartPositionMs(0L).setEndPositionMs(totalMs).build());
+            }
+            EditedMediaItem musicItem = new EditedMediaItem.Builder(uriBuilder.build()).setRemoveVideo(true).build();
+            sequences.add(new EditedMediaItemSequence((List<EditedMediaItem>) CollectionsKt.listOf(musicItem), loop));
+        }
+        ArrayList effects = new ArrayList();
+        effects.add(Presentation.createForWidthAndHeight(width, height, 0));
+        effects.add(new OverlayEffect(ImmutableList.of(new TemplateOverlay(spec, photos))));
+        return new Composition.Builder(sequences).experimentalSetForceAudioTrack(true).setHdrMode(2).setEffects(new Effects(CollectionsKt.emptyList(), effects)).build();
     }
 
     public final Transformer newTransformer(Context ctx, ExportOptions o, Transformer.Listener listener) {

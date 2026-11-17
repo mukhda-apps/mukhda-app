@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Random;
 
 public final class TemplateEngine {
+    public static String fxOverride;
+    public static String filterOverride;
     private TemplateEngine() {}
 
     public static void drawFrame(Canvas canvas, int w, int h, TemplateSpec spec, List<Bitmap> photos, long tMs) {
@@ -49,11 +51,28 @@ public final class TemplateEngine {
             }
         }
 
+        String fxName = fxOverride != null ? fxOverride : spec.beatFx;
         long beatMs = Math.max(1, 60000L / spec.bpm);
         long nearest = Math.round(tMs / (double) beatMs) * beatMs;
         long dist = Math.abs(tMs - nearest);
         float beatP = dist < 220 ? 1f - dist / 220f : 0f;
-        applyBeatFx(canvas, w, h, spec, beatP);
+        if ("zoompulse".equals(fxName)) {
+            float z = 1f + 0.04f * (float) Math.abs(Math.sin(tMs / 600.0));
+            canvas.scale(z, z, w / 2f, h / 2f);
+        } else {
+            applyBeatFx(canvas, w, h, spec, beatP, fxName);
+        }
+        if ("shine".equals(fxName)) {
+            float ph = (tMs % 4000L) / 4000f;
+            float bx = (w + h) * ph - h;
+            Paint sp = new Paint();
+            sp.setColor(Color.WHITE);
+            sp.setAlpha(36);
+            canvas.save();
+            canvas.rotate(30, w / 2f, h / 2f);
+            canvas.drawRect(bx, -h, bx + w * 0.15f, h * 3, sp);
+            canvas.restore();
+        }
 
         drawOverlay(canvas, w, h, spec, tMs);
         drawTexts(canvas, w, h, spec, tMs);
@@ -84,7 +103,7 @@ public final class TemplateEngine {
 
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
         paint.setAlpha((int) (255 * a));
-        ColorMatrix cm = filterMatrix(spec.filter);
+        ColorMatrix cm = filterMatrix(filterOverride != null ? filterOverride : spec.filter);
         if (cm != null) paint.setColorFilter(new ColorMatrixColorFilter(cm));
 
         canvas.save();
@@ -106,20 +125,20 @@ public final class TemplateEngine {
         }
     }
 
-    private static void applyBeatFx(Canvas canvas, int w, int h, TemplateSpec spec, float beatP) {
-        if (beatP <= 0f || "none".equals(spec.beatFx)) return;
-        if ("flash".equals(spec.beatFx)) {
+    private static void applyBeatFx(Canvas canvas, int w, int h, TemplateSpec spec, float beatP, String fxName) {
+        if (beatP <= 0f || "none".equals(fxName)) return;
+        if ("flash".equals(fxName)) {
             Paint p = new Paint();
             p.setColor(Color.WHITE);
             p.setAlpha((int) (140 * beatP));
             canvas.drawRect(0, 0, w, h, p);
-        } else if ("punch".equals(spec.beatFx)) {
+        } else if ("punch".equals(fxName)) {
             float z = 1f + 0.03f * beatP;
             canvas.scale(z, z, w / 2f, h / 2f);
-        } else if ("shake".equals(spec.beatFx)) {
+        } else if ("shake".equals(fxName)) {
             float d = 10f * beatP;
             canvas.translate(((t2(w) % 2) == 0 ? d : -d), 0);
-        } else if ("glitch".equals(spec.beatFx)) {
+        } else if ("glitch".equals(fxName)) {
             Paint p = new Paint();
             p.setColor(0xFFFF0000);
             p.setAlpha((int) (40 * beatP));
@@ -265,6 +284,7 @@ public final class TemplateEngine {
     }
 
     public static final String[] FILTERS = {"none", "warm", "vivid", "diya", "rose", "bw", "noir", "cool", "sepia", "fade", "aqua", "sunset", "cinema"};
+    public static final String[] EFFECTS = {"none", "punch", "flash", "shake", "glitch", "zoompulse", "shine"};
 
     public static ColorFilterHolder unused() { return null; }
     public static final class ColorFilterHolder { public PorterDuffColorFilter f; }

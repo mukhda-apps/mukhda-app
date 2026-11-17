@@ -63,11 +63,13 @@ public final class MainActivity extends AppCompatActivity {
     public List<Clip> pendingClips;
     public String pendingLang;
     public Template pendingTemplate;
+    public TemplateSpec pendingSpec;
+    public String specQuery = "";
     public final ActivityResultLauncher<String[]> pickLong;
     public final ActivityResultLauncher<String[]> pickMedia;
     public boolean started;
     public int tab;
-    public String category = "Trending";
+    public String category = "For you";
     public final Handler main = new Handler(Looper.getMainLooper());
     public String pendingMode = "project";
 
@@ -256,7 +258,7 @@ public final class MainActivity extends AppCompatActivity {
             Unit unit2 = Unit.INSTANCE;
             col.addView(frameLayout, lp$default2);
             LinearLayout linearLayout3 = new LinearLayout(mainActivity);
-            for (final String str : Templates.INSTANCE.getCategories()) {
+            for (final String str : TemplateSpec.CATEGORIES) {
                 boolean areEqual = Intrinsics.areEqual(str, this.category);
                 TextView textView3 = new TextView(mainActivity);
                 textView3.setText(str);
@@ -284,7 +286,7 @@ public final class MainActivity extends AppCompatActivity {
             Unit unit4 = Unit.INSTANCE;
             col.addView(horizontalScrollView, lp$default4);
             int i3 = 2;
-            Iterator it = CollectionsKt.chunked(Templates.INSTANCE.inCategory(this.category), 2).iterator();
+            Iterator it = CollectionsKt.chunked(specList(this.category), 2).iterator();
             while (true) {
                 float f = 1.0f;
                 if (!it.hasNext()) {
@@ -294,8 +296,8 @@ public final class MainActivity extends AppCompatActivity {
                 LinearLayout linearLayout4 = new LinearLayout(mainActivity);
                 int i4 = i;
                 while (i4 < i3) {
-                    Template template = (Template) CollectionsKt.getOrNull(list, i4);
-                    View templateCard = template != null ? templateCard(template) : new View(mainActivity);
+                    TemplateSpec template = (TemplateSpec) CollectionsKt.getOrNull(list, i4);
+                    View templateCard = template != null ? specCard(template) : new View(mainActivity);
                     LinearLayout.LayoutParams lp = UiKt.lp(i, UiKt.getWRAP(), f);
                     lp.setMargins(UiKt.dp(mainActivity, 5), UiKt.dp(mainActivity, 6), UiKt.dp(mainActivity, 5), UiKt.dp(mainActivity, 6));
                     Unit unit5 = Unit.INSTANCE;
@@ -628,6 +630,17 @@ public final class MainActivity extends AppCompatActivity {
             return;
         }
         Intrinsics.checkNotNull(list);
+        if (this$0.pendingSpec != null) {
+            int need = this$0.pendingSpec.photoCount;
+            ArrayList adjusted = new ArrayList();
+            for (int i = 0; i < need; i++) {
+                adjusted.add(list.get(i % list.size()));
+            }
+            if (list.size() != need) {
+                Toast.makeText(this$0, this$0.pendingSpec.title + " needs " + need + " photos - filled in for you", 1).show();
+            }
+            list = adjusted;
+        }
         this$0.createFrom(list);
     }
 
@@ -874,23 +887,145 @@ public final class MainActivity extends AppCompatActivity {
     }
 
     public final void templates(LinearLayout col) {
-        MainActivity mainActivity = this;
+        final MainActivity mainActivity = this;
         col.addView(UiKt.label$default(mainActivity, "Templates", 26.0f, C.INSTANCE.getText(), true, 0, 16, null));
         TextView label$default = UiKt.label$default(mainActivity, "Each template has its own effects and song. Just add your photos.", 13.0f, C.INSTANCE.getDim(), false, 0, 24, null);
         label$default.setPadding(0, UiKt.dp(mainActivity, 4), 0, UiKt.dp(mainActivity, 12));
         col.addView(label$default);
-        for (List list : CollectionsKt.chunked(Templates.INSTANCE.getAll(), 2)) {
+        final android.widget.EditText search = new android.widget.EditText(mainActivity);
+        search.setHint("Search templates");
+        search.setSingleLine(true);
+        search.setTextColor(C.INSTANCE.getText());
+        search.setHintTextColor(C.INSTANCE.getDim());
+        search.setBackground(UiKt.solid(C.INSTANCE.getCard(), UiKt.dp(mainActivity, 14), C.INSTANCE.getStroke(), UiKt.dp(mainActivity, 1)));
+        search.setPadding(UiKt.dp(mainActivity, 14), 0, UiKt.dp(mainActivity, 14), 0);
+        search.setText(specQuery);
+        col.addView(search, UiKt.lp$default(UiKt.getMATCH(), UiKt.dp(mainActivity, 44), 0.0f, 4, null));
+        LinearLayout chipRow = new LinearLayout(mainActivity);
+        for (final String str : TemplateSpec.CATEGORIES) {
+            boolean sel = Intrinsics.areEqual(str, this.category);
+            TextView chip = new TextView(mainActivity);
+            chip.setText(str);
+            chip.setTextSize(13.0f);
+            chip.setTextColor(sel ? -1 : C.INSTANCE.getDim());
+            chip.setPadding(UiKt.dp(mainActivity, 14), UiKt.dp(mainActivity, 7), UiKt.dp(mainActivity, 14), UiKt.dp(mainActivity, 7));
+            chip.setBackground(sel ? UiKt.gradient$default(C.INSTANCE.getSaffron(), C.INSTANCE.getPink(), UiKt.dp(mainActivity, 18), null, 8, null) : UiKt.solid(C.INSTANCE.getCard(), UiKt.dp(mainActivity, 18), C.INSTANCE.getStroke(), UiKt.dp(mainActivity, 1)));
+            chip.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public final void onClick(View view) {
+                    mainActivity.category = str;
+                    mainActivity.refreshSpecGrid();
+                    show(1);
+                }
+            });
+            LinearLayout.LayoutParams clp = UiKt.lp$default(UiKt.getWRAP(), UiKt.getWRAP(), 0.0f, 4, null);
+            clp.rightMargin = UiKt.dp(mainActivity, 8);
+            chipRow.addView(chip, clp);
+        }
+        HorizontalScrollView chipScroll = new HorizontalScrollView(mainActivity);
+        chipScroll.setHorizontalScrollBarEnabled(false);
+        chipScroll.addView(chipRow);
+        LinearLayout.LayoutParams cslp = UiKt.lp$default(UiKt.getMATCH(), UiKt.getWRAP(), 0.0f, 4, null);
+        cslp.topMargin = UiKt.dp(mainActivity, 12);
+        col.addView(chipScroll, cslp);
+        final LinearLayout grid = new LinearLayout(mainActivity);
+        grid.setOrientation(1);
+        LinearLayout.LayoutParams glp = UiKt.lp$default(UiKt.getMATCH(), UiKt.getWRAP(), 0.0f, 4, null);
+        glp.topMargin = UiKt.dp(mainActivity, 8);
+        col.addView(grid, glp);
+        fillSpecGrid(grid);
+        search.addTextChangedListener(new android.text.TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence c, int a, int b, int d) {}
+            @Override
+            public void onTextChanged(CharSequence c, int a, int b, int d) {}
+            @Override
+            public void afterTextChanged(android.text.Editable e) {
+                mainActivity.specQuery = e == null ? "" : e.toString();
+                mainActivity.fillSpecGrid(grid);
+            }
+        });
+    }
+
+    public final void refreshSpecGrid() {
+    }
+
+    public final List<TemplateSpec> specList(String cat) {
+        List<TemplateSpec> base = TemplateSpec.inCategory(cat);
+        String q = specQuery == null ? "" : specQuery.trim().toLowerCase();
+        if (q.length() == 0) return base;
+        ArrayList<TemplateSpec> out = new ArrayList<TemplateSpec>();
+        for (TemplateSpec t : base) {
+            if (t.title.toLowerCase().contains(q) || t.sub.toLowerCase().contains(q)) out.add(t);
+        }
+        return out;
+    }
+
+    public final void fillSpecGrid(LinearLayout grid) {
+        MainActivity mainActivity = this;
+        grid.removeAllViews();
+        for (List list : CollectionsKt.chunked(specList(this.category), 2)) {
             LinearLayout linearLayout = new LinearLayout(mainActivity);
             for (int i = 0; i < 2; i++) {
-                Template template = (Template) CollectionsKt.getOrNull(list, i);
-                View templateCard = template != null ? templateCard(template) : new View(mainActivity);
+                TemplateSpec template = (TemplateSpec) CollectionsKt.getOrNull(list, i);
+                View templateCard = template != null ? specCard(template) : new View(mainActivity);
                 LinearLayout.LayoutParams lp = UiKt.lp(0, UiKt.getWRAP(), 1.0f);
                 lp.setMargins(UiKt.dp(mainActivity, 5), UiKt.dp(mainActivity, 6), UiKt.dp(mainActivity, 5), UiKt.dp(mainActivity, 6));
                 Unit unit = Unit.INSTANCE;
                 linearLayout.addView(templateCard, lp);
             }
-            col.addView(linearLayout, UiKt.lp$default(UiKt.getMATCH(), UiKt.getWRAP(), 0.0f, 4, null));
+            grid.addView(linearLayout, UiKt.lp$default(UiKt.getMATCH(), UiKt.getWRAP(), 0.0f, 4, null));
         }
+    }
+
+    public final Template specToTemplate(TemplateSpec sp) {
+        Track tr = Music.INSTANCE.byFile(sp.musicFile);
+        return new Template(sp.id, sp.title, sp.sub, tr != null ? tr.getBpm() : sp.bpm, sp.musicFile, 2, sp.durationSec, sp.filter, "reels", sp.textLines.isEmpty() ? sp.title : sp.textLines.get(0), sp.c1, sp.c2, sp.cats, false, sp.beatFx);
+    }
+
+    public final View specCard(final TemplateSpec sp) {
+        final MainActivity mainActivity = this;
+        FrameLayout frameLayout = new FrameLayout(mainActivity);
+        frameLayout.setBackground(UiKt.solid(C.INSTANCE.getCard(), UiKt.dp(mainActivity, 18), C.INSTANCE.getStroke(), UiKt.dp(mainActivity, 1)));
+        frameLayout.setClipToOutline(true);
+        frameLayout.setOutlineProvider(ViewOutlineProvider.BACKGROUND);
+        TemplateView pv = new TemplateView(mainActivity);
+        pv.setTemplate(sp, null);
+        pv.play();
+        frameLayout.addView(pv, new FrameLayout.LayoutParams(UiKt.getMATCH(), UiKt.dp(mainActivity, 190)));
+        LinearLayout linearLayout = new LinearLayout(mainActivity);
+        linearLayout.setOrientation(1);
+        linearLayout.setPadding(UiKt.dp(mainActivity, 12), UiKt.dp(mainActivity, 8), UiKt.dp(mainActivity, 12), UiKt.dp(mainActivity, 10));
+        linearLayout.setBackgroundColor(Color.argb(150, 0, 0, 0));
+        TextView label$default = UiKt.label$default(mainActivity, sp.title, 14.0f, -1, true, 0, 16, null);
+        label$default.setMaxLines(1);
+        label$default.setEllipsize(TextUtils.TruncateAt.END);
+        linearLayout.addView(label$default);
+        Track byFile = Music.INSTANCE.byFile(sp.musicFile);
+        String str = byFile == null ? "" : byFile.getTitle();
+        if (str == null) str = "";
+        TextView label$default2 = UiKt.label$default(mainActivity, "\u266a " + str, 11.0f, Color.argb(230, 255, 255, 255), false, 0, 24, null);
+        label$default2.setMaxLines(1);
+        label$default2.setEllipsize(TextUtils.TruncateAt.END);
+        label$default2.setPadding(0, UiKt.dp(mainActivity, 2), 0, 0);
+        linearLayout.addView(label$default2);
+        frameLayout.addView(linearLayout, new FrameLayout.LayoutParams(UiKt.getMATCH(), UiKt.getWRAP(), 80));
+        TextView badge = UiKt.label$default(mainActivity, sp.photoCount + " photos", 10.0f, -1, true, 0, 16, null);
+        badge.setPadding(UiKt.dp(mainActivity, 8), UiKt.dp(mainActivity, 3), UiKt.dp(mainActivity, 8), UiKt.dp(mainActivity, 3));
+        badge.setBackground(UiKt.solid$default(Color.argb(180, 0, 0, 0), UiKt.dp(mainActivity, 8), 0, 0, 12, null));
+        FrameLayout.LayoutParams blp = new FrameLayout.LayoutParams(UiKt.getWRAP(), UiKt.getWRAP(), 8388661);
+        blp.setMargins(0, UiKt.dp(mainActivity, 8), UiKt.dp(mainActivity, 8), 0);
+        frameLayout.addView(badge, blp);
+        frameLayout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public final void onClick(View view) {
+                mainActivity.pendingMode = "template";
+                mainActivity.pendingSpec = sp;
+                mainActivity.pendingTemplate = mainActivity.specToTemplate(sp);
+                mainActivity.pickMedia.launch(new String[]{"image/*"});
+            }
+        });
+        return frameLayout;
     }
 
     public final View tile(String title, String sub, int accent, final Function0<Unit> onClick) {
