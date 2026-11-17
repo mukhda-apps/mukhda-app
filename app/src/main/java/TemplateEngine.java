@@ -43,11 +43,11 @@ public final class TemplateEngine {
             float slotStart = idx * slotMs;
             float p = (tMs - slotStart) / slotMs;
             Bitmap cur = photos.get(idx % n);
-            drawPhoto(canvas, cur, w, h, p, idx, spec, 1f);
+            drawPhoto(canvas, cur, w, h, p, tMs - slotStart, idx, spec, 1f);
             if (p > 1f - xf / slotMs && idx + 1 < slots) {
                 float xa = (p - (1f - xf / slotMs)) / (xf / slotMs);
                 Bitmap nxt = photos.get((idx + 1) % n);
-                drawPhoto(canvas, nxt, w, h, 0f, idx + 1, spec, xa);
+                drawPhoto(canvas, nxt, w, h, 0f, 0f, idx + 1, spec, xa);
             }
         }
 
@@ -80,10 +80,10 @@ public final class TemplateEngine {
         drawWatermark(canvas, w, h);
     }
 
-    private static void drawPhoto(Canvas canvas, Bitmap bmp, int w, int h, float p, int slot,
+    private static void drawPhoto(Canvas canvas, Bitmap bmp, int w, int h, float p, float slotElapsedMs, int slot,
                                   TemplateSpec spec, float alpha) {
         if (bmp == null || bmp.isRecycled()) return;
-        float enter = Math.min(1f, p / 0.15f);
+        float enter = Math.min(1f, slotElapsedMs / 400f);
         float a = alpha * enter;
         if (a <= 0f) return;
 
