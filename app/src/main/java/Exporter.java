@@ -180,7 +180,7 @@ public final class Exporter {
 
     public final int effectiveHeight(ExportOptions o) {
         Intrinsics.checkNotNullParameter(o, "o");
-        int min = Math.min(o.getHeightCap(), maxEncoderHeight());
+        int min = Math.min(o.getHeightCap(), maxEncoderHeight(o.getHeightCap()));
         return o.getLite() ? Math.min(min, 720) : min;
     }
 
@@ -191,6 +191,10 @@ public final class Exporter {
     }
 
     public final int maxEncoderHeight() {
+        return maxEncoderHeight(Integer.MAX_VALUE);
+    }
+
+    public final int maxEncoderHeight(int needed) {
         try {
             MediaCodecInfo[] codecInfos = new MediaCodecList(0).getCodecInfos();
             Intrinsics.checkNotNull(codecInfos);
@@ -214,13 +218,13 @@ public final class Exporter {
                             Integer upper2 = videoCapabilities.getSupportedWidths().getUpper();
                             Intrinsics.checkNotNullExpressionValue(upper2, "getUpper(...)");
                             Math.min(intValue, upper2.intValue());
-                            if (videoCapabilities.areSizeAndRateSupported(1080, 1920, 30.0d)) {
+                            if (needed >= 1080 && videoCapabilities.areSizeAndRateSupported(1080, 1920, 30.0d)) {
                                 i = Math.max(i, 1080);
                             }
-                            if (videoCapabilities.areSizeAndRateSupported(1440, 2560, 30.0d)) {
+                            if (needed >= 1440 && videoCapabilities.areSizeAndRateSupported(1440, 2560, 30.0d)) {
                                 i = Math.max(i, 1440);
                             }
-                            if (videoCapabilities.areSizeAndRateSupported(2160, 3840, 30.0d)) {
+                            if (needed >= 2160 && videoCapabilities.areSizeAndRateSupported(2160, 3840, 30.0d)) {
                                 i = Math.max(i, 2160);
                             }
                         } else {
