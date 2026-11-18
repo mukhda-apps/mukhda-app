@@ -62,10 +62,12 @@ jobs:
             sleep 12
             adb exec-out screencap -p > artifacts/make.png || true
             adb shell dumpsys activity activities | grep -i 'topResumedActivity' > artifacts/top-make.txt || true
-            timeout 25m ./gradlew --no-daemon :app:connectedDebugAndroidTest --continue || true
+            timeout 15m ./gradlew --no-daemon :app:installDebugAndroidTest || true
+            timeout 15m adb shell am instrument -w -r com.mukhda.video.test/androidx.test.runner.AndroidJUnitRunner > artifacts/instrument.txt 2>&1 || true
+            tail -30 artifacts/instrument.txt || true
             adb logcat -d > artifacts/logcat.txt || true
-            adb shell ls -la /data/data/com.mukhda.video.test/files/ci_export/ || true
-            adb pull /data/data/com.mukhda.video.test/files/ci_export artifacts/ci_export || true
+            adb shell ls -la /data/user/0/com.mukhda.video/files/ci_export/ || true
+            adb pull /data/user/0/com.mukhda.video/files/ci_export artifacts/ci_export || true
             ls -la artifacts || true
 
       - uses: actions/upload-artifact@v4
