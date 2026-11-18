@@ -279,9 +279,16 @@ public final class Exporter {
         Intrinsics.checkNotNullParameter(ctx, "ctx");
         Intrinsics.checkNotNullParameter(o, "o");
         Intrinsics.checkNotNullParameter(listener, "listener");
-        DefaultEncoderFactory build = new DefaultEncoderFactory.Builder(ctx).setRequestedVideoEncoderSettings(new VideoEncoderSettings.Builder().setBitrate(bitrateFor(effectiveHeight(o), o.getPreset())).build()).setEnableFallback(true).build();
+        System.out.println("EXPORT-TEST nt: enter");
+        int eh = effectiveHeight(o);
+        System.out.println("EXPORT-TEST nt: effectiveHeight=" + eh);
+        int br = bitrateFor(eh, o.getPreset());
+        System.out.println("EXPORT-TEST nt: bitrate=" + br);
+        DefaultEncoderFactory build = new DefaultEncoderFactory.Builder(ctx).setRequestedVideoEncoderSettings(new VideoEncoderSettings.Builder().setBitrate(br).build()).setEnableFallback(true).build();
+        System.out.println("EXPORT-TEST nt: encoderFactory built");
         Intrinsics.checkNotNullExpressionValue(build, "build(...)");
         Transformer build2 = new Transformer.Builder(ctx).setVideoMimeType(MimeTypes.VIDEO_H264).setAudioMimeType(MimeTypes.AUDIO_AAC).setEncoderFactory(build).addListener(listener).build();
+        System.out.println("EXPORT-TEST nt: transformer built");
         Intrinsics.checkNotNullExpressionValue(build2, "build(...)");
         return build2;
     }
