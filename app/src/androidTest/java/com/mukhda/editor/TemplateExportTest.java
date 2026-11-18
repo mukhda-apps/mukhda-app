@@ -93,6 +93,7 @@ public class TemplateExportTest {
             @Override
             public void run() {
                 try {
+                    System.out.println("EXPORT-TEST stage: runnable entered");
                     holder[0] = Exporter.INSTANCE.newTransformer(ctx, options, new Transformer.Listener() {
                         @Override
                         public void onCompleted(Composition c, ExportResult r) {
@@ -107,9 +108,11 @@ public class TemplateExportTest {
                             done.countDown();
                         }
                     });
+                    System.out.println("EXPORT-TEST stage: transformer built");
                     holder[0].start(composition, out.getAbsolutePath());
                     System.out.println("EXPORT-TEST stage: transformer started");
                 } catch (Throwable t) {
+                    System.out.println("EXPORT-TEST stage: runnable exception " + t);
                     err[0] = t;
                     done.countDown();
                 }
@@ -125,6 +128,8 @@ public class TemplateExportTest {
                     if (holder[0] != null) {
                         int state = holder[0].getProgress(ph);
                         System.out.println("EXPORT-TEST progress=" + ph.progress + " state=" + state);
+                    } else {
+                        System.out.println("EXPORT-TEST poll alive, holder still null");
                     }
                 } catch (Throwable t) {
                     System.out.println("EXPORT-TEST progress poll error " + t);
@@ -133,7 +138,7 @@ public class TemplateExportTest {
             }
         };
         handler.postDelayed(poller, 5000);
-        boolean finished = done.await(6, TimeUnit.MINUTES);
+        boolean finished = done.await(4, TimeUnit.MINUTES);
         stopPolling[0] = true;
         handler.post(new Runnable() {
             @Override
@@ -145,7 +150,7 @@ public class TemplateExportTest {
             }
         });
         ht.quitSafely();
-        if (!finished) fail("export timed out after 6 minutes");
+        if (!finished) fail("export timed out after 4 minutes");
         if (err[0] != null) fail("export error: " + err[0]);
         assertTrue("output file missing", out.exists());
         assertTrue("output too small: " + out.length(), out.length() > 30000);
