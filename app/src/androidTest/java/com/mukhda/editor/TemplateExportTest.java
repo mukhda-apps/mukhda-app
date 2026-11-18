@@ -69,7 +69,7 @@ public class TemplateExportTest {
         }
         String musicUri = Music.INSTANCE.uri(ctx, spec.musicFile).toString();
         Project project = new Project("testexport", "Test Export", clips, new ArrayList<Caption>(),
-                "reels", null, musicUri, 0.35f, spec.filter, spec.id, System.currentTimeMillis());
+                "reels", "hinglish", musicUri, 0.35f, spec.filter, spec.id, System.currentTimeMillis());
         // CI/speed: verify the real export path at a small size and short duration.
         // Production exports still use spec.durationMs() at 30fps, 1080x1920.
         final long testDurationMs = 2000;

@@ -55,8 +55,10 @@ jobs:
             sleep 12
             adb exec-out screencap -p > artifacts/make.png || true
             adb logcat -c || true
-            ( for i in $(seq 1 30); do sleep 60; adb logcat -d > artifacts/logcat-live.txt 2>/dev/null; done ) &
+            ( for i in $(seq 1 30); do sleep 60; adb logcat -d > artifacts/logcat-live.txt 2>/dev/null; done ) >/dev/null 2>&1 &
+            SNAP=$!
             timeout 25m ./gradlew --no-daemon :app:connectedDebugAndroidTest --continue || true
+            kill $SNAP 2>/dev/null || true
             adb logcat -d > artifacts/logcat.txt || true
             adb pull /sdcard/Android/data/com.mukhda.video/files/ artifacts/files || true
             ls -la artifacts artifacts/files 2>/dev/null || true
