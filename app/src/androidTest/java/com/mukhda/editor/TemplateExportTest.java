@@ -173,6 +173,26 @@ public class TemplateExportTest {
             fr.recycle();
         }
         mmr.release();
+
+        // Copy evidence into internal storage so CI can pull it via /data/data (FUSE
+        // external-storage views are per-app mount namespaces, invisible to adb root).
+        File ciDir = new File(ctx.getFilesDir(), "ci_export");
+        ciDir.mkdirs();
+        copy(out, new File(ciDir, "test_export_birthday.mp4"));
+        for (int i = 0; i < 3; i++) {
+            File f = new File(framesDir, "export_f" + i + ".png");
+            if (f.exists()) copy(f, new File(ciDir, "export_f" + i + ".png"));
+        }
+    }
+
+    private static void copy(File src, File dst) throws Exception {
+        java.io.FileInputStream in = new java.io.FileInputStream(src);
+        java.io.FileOutputStream o = new java.io.FileOutputStream(dst);
+        byte[] buf = new byte[65536];
+        int n;
+        while ((n = in.read(buf)) > 0) o.write(buf, 0, n);
+        o.close();
+        in.close();
     }
 
     @Test
