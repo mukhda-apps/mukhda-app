@@ -51,8 +51,7 @@ jobs:
             # root-pushed files under /sdcard/Android/data are invisible to the app through FUSE.
             adb shell mkdir -p /data/user/0/com.mukhda.video/files/testphotos
             for i in 0 1 2 3; do adb push test-fixtures/p$i.jpg /data/user/0/com.mukhda.video/files/testphotos/p$i.jpg; done
-            APPUID=$(adb shell stat -c '%u:%g' /data/user/0/com.mukhda.video | tr -d '\r')
-            adb shell chown -R $APPUID /data/user/0/com.mukhda.video/files/testphotos
+            adb shell chown -R $(adb shell stat -c %u /data/user/0/com.mukhda.video | tr -d '\r') /data/user/0/com.mukhda.video/files/testphotos
             adb logcat -c || true
             adb shell am start -n com.mukhda.video/com.mukhda.editor.MainActivity || true
             sleep 15
