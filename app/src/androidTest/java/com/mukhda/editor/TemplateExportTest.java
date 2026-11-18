@@ -69,8 +69,8 @@ public class TemplateExportTest {
         String musicUri = Music.INSTANCE.uri(ctx, spec.musicFile).toString();
         Project project = new Project("testexport", "Test Export", clips, new ArrayList<Caption>(),
                 "reels", null, musicUri, 0.35f, spec.filter, spec.id, System.currentTimeMillis());
-        ExportOptions options = new ExportOptions(Presets.INSTANCE.getAll().get(0), 1080, "9:16", true, false);
-        final Composition composition = Exporter.INSTANCE.buildTemplateComposition(ctx, project, spec);
+        ExportOptions options = new ExportOptions(Presets.INSTANCE.getAll().get(0), 540, "9:16", true, false);
+        final Composition composition = Exporter.INSTANCE.buildTemplateComposition(ctx, project, spec, 540, 960);
         final File out = new File(ctx.getExternalFilesDir(null), "test_export_birthday.mp4");
         if (out.exists()) out.delete();
 

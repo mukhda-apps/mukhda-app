@@ -236,9 +236,11 @@ public final class Exporter {
     }
 
     public final Composition buildTemplateComposition(Context ctx, Project p, TemplateSpec spec) {
+        return buildTemplateComposition(ctx, p, spec, 1080, 1920);
+    }
+
+    public final Composition buildTemplateComposition(Context ctx, Project p, TemplateSpec spec, int width, int height) {
         TemplateEngine.applyOverrides(ctx, p.getId());
-        int width = 1080;
-        int height = 1920;
         List<Bitmap> photos = TemplatePhotos.load(ctx, p.getClips(), width, height);
         long totalMs = spec.durationMs();
         MediaItem base = new MediaItem.Builder().setUri(Uri.parse("asset:///blank.png")).setImageDurationMs(totalMs).build();
