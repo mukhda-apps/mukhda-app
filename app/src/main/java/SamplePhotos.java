@@ -89,20 +89,33 @@ public final class SamplePhotos {
         p2.close();
         c.drawPath(p2, hill);
 
-        // person silhouette
-        float px = w * (0.62f - 0.08f * (idx % 3));
-        float py = h * 0.86f;
-        Paint fig = new Paint(Paint.ANTI_ALIAS_FLAG);
-        fig.setColor(Color.argb(235, 8, 8, 16));
-        float s = h * 0.0035f * (1f + 0.15f * (idx % 2));
-        c.drawCircle(px, py - 118 * s, 26 * s, fig); // head
-        Path body = new Path();
-        body.moveTo(px - 30 * s, py - 84 * s);
-        body.quadTo(px, py - 100 * s, px + 30 * s, py - 84 * s);
-        body.lineTo(px + 22 * s, py);
-        body.lineTo(px - 22 * s, py);
-        body.close();
-        c.drawPath(body, fig);
+        // stars on darker skies
+        if (idx % 2 == 0) {
+            Paint st = new Paint(Paint.ANTI_ALIAS_FLAG);
+            for (int i = 0; i < 26; i++) {
+                float sx = (i * 197 + idx * 53) % w;
+                float sy = (i * 131 + idx * 71) % (h / 2);
+                st.setColor(Color.argb(90 + (i * 37) % 140, 255, 255, 255));
+                c.drawCircle(sx, sy, 2 + (i % 3), st);
+            }
+        }
+
+        // birds
+        Paint bird = new Paint(Paint.ANTI_ALIAS_FLAG);
+        bird.setColor(Color.argb(200, 20, 20, 35));
+        bird.setStyle(Paint.Style.STROKE);
+        bird.setStrokeWidth(4f);
+        bird.setStrokeCap(Paint.Cap.ROUND);
+        for (int i = 0; i < 3; i++) {
+            float bx = w * (0.2f + 0.22f * i) + (idx * 29) % 60;
+            float by = h * (0.30f + 0.06f * ((idx + i) % 3));
+            float bs = 14 + 4 * i;
+            Path bp = new Path();
+            bp.moveTo(bx - bs, by);
+            bp.quadTo(bx - bs / 2, by - bs * 0.8f, bx, by);
+            bp.quadTo(bx + bs / 2, by - bs * 0.8f, bx + bs, by);
+            c.drawPath(bp, bird);
+        }
 
         // soft vignette bottom for text legibility in previews
         Paint vg = new Paint(Paint.ANTI_ALIAS_FLAG);

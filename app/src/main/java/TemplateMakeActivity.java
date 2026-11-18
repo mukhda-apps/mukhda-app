@@ -18,8 +18,6 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 import androidx.media3.transformer.Composition;
@@ -34,8 +32,9 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * mAst-style make screen: big live preview of the finished video with the
- * user's own photos, photo-slot strip, visible Add Music / Effects / Filters
- * rows, gradient Export button, then save-to-gallery + share sheet.
+ * user's own photos, photo-slot strip, gradient Export button, then
+ * save-to-gallery + share sheet. Song, effects and filters are baked into
+ * the template itself - the user only adds photos.
  */
 public final class TemplateMakeActivity extends AppCompatActivity {
     public static final String EXTRA_SPEC = "spec";
@@ -49,10 +48,6 @@ public final class TemplateMakeActivity extends AppCompatActivity {
     private TemplateView preview;
     private MediaPlayer player;
     private Track track;
-    private String customMusicUri;
-    private String fx;     // null = template default
-    private String filter; // null = template default
-    private ActivityResultLauncher<String[]> audioPicker;
 
     @Override
     public void onCreate(Bundle b) {
@@ -73,16 +68,6 @@ public final class TemplateMakeActivity extends AppCompatActivity {
         for (String u : photoUris) {
             clips.add(new Clip("m" + (i++), u, true, spec.durationMs(), 0, spec.durationMs(), 1f, 1f));
         }
-
-        audioPicker = registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
-            if (uri == null) return;
-            try { getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION); }
-            catch (Exception ignored) {}
-            customMusicUri = uri.toString();
-            track = null;
-            playMusic();
-            Toast.makeText(self, "Phone song added", Toast.LENGTH_SHORT).show();
-        });
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -141,82 +126,13 @@ public final class TemplateMakeActivity extends AppCompatActivity {
         photoRow.addView(photoScroll, UiKt.lp(0, UiKt.getWRAP(), 1.0f));
         root.addView(photoRow);
 
-        // music row
-        root.addView(sectionLabel("Add Music"));
-        HorizontalScrollView musicScroll = new HorizontalScrollView(this);
-        musicScroll.setHorizontalScrollBarEnabled(false);
-        LinearLayout musicRow = new LinearLayout(this);
-        musicScroll.addView(musicRow);
-        List<String> musicNames = new ArrayList<>();
-        final List<Object> musicSel = new ArrayList<>(); // Track or "phone"
-        if (track != null) { musicNames.add("\u266a " + track.getTitle()); musicSel.add(track); }
-        for (Track t : Music.INSTANCE.getAll()) {
-            if (track != null && t.getFile().equals(track.getFile())) continue;
-            musicNames.add("\u266a " + t.getTitle());
-            musicSel.add(t);
-        }
-        musicNames.add("From phone");
-        musicSel.add("phone");
-        final int[] musicIdx = {0};
-        for (int j = 0; j < musicNames.size(); j++) {
-            final int idx = j;
-            musicRow.addView(chip(musicNames.get(j), j == 0, v -> {
-                musicIdx[0] = idx;
-                refreshChips(musicRow, idx);
-                Object sel = musicSel.get(idx);
-                if ("phone".equals(sel)) {
-                    audioPicker.launch(new String[]{"audio/*"});
-                } else {
-                    track = (Track) sel;
-                    customMusicUri = null;
-                    playMusic();
-                }
-            }));
-        }
-        root.addView(musicScroll);
-
-        // effects row
-        root.addView(sectionLabel("Effects"));
-        HorizontalScrollView fxScroll = new HorizontalScrollView(this);
-        fxScroll.setHorizontalScrollBarEnabled(false);
-        LinearLayout fxRow = new LinearLayout(this);
-        fxScroll.addView(fxRow);
-        String[] fxNames = {"Default", "Punch", "Flash", "Shake", "Glitch", "Zoom pulse", "Shine"};
-        final String[] fxVals = {null, "punch", "flash", "shake", "glitch", "zoompulse", "shine"};
-        final int[] fxIdx = {0};
-        for (int j = 0; j < fxNames.length; j++) {
-            final int idx = j;
-            fxRow.addView(chip(fxNames[j], j == 0, v -> {
-                fxIdx[0] = idx;
-                refreshChips(fxRow, idx);
-                fx = fxVals[idx];
-                saveOverrides();
-                TemplateEngine.fxOverride = fx;
-            }));
-        }
-        root.addView(fxScroll);
-
-        // filters row
-        root.addView(sectionLabel("Filters"));
-        HorizontalScrollView flScroll = new HorizontalScrollView(this);
-        flScroll.setHorizontalScrollBarEnabled(false);
-        LinearLayout flRow = new LinearLayout(this);
-        flScroll.addView(flRow);
-        String[] flNames = {"Default", "Warm", "Vivid", "Diya", "Rose", "B&W", "Noir", "Cool", "Sepia", "Fade", "Aqua", "Sunset", "Cinema"};
-        final String[] flVals = {null, "warm", "vivid", "diya", "rose", "bw", "noir", "cool", "sepia", "fade", "aqua", "sunset", "cinema"};
-        final int[] flIdx = {0};
-        for (int j = 0; j < flNames.length; j++) {
-            final int idx = j;
-            flRow.addView(chip(flNames[j], j == 0, v -> {
-                flIdx[0] = idx;
-                refreshChips(flRow, idx);
-                filter = flVals[idx];
-                saveOverrides();
-                TemplateEngine.filterOverride = filter;
-            }));
-        }
-        root.addView(flScroll);
-        root.addView(UiKt.spacer(this, 10));
+        // baked-in template info (song + duration are part of the template)
+        TextView baked = UiKt.label$default(this,
+                "\u266a " + (track == null ? "" : track.getTitle()) + "  \u00b7  " + spec.durationSec
+                        + "s  \u00b7  effects + filter included",
+                12.0f, C.INSTANCE.getDim(), false, 17, 24, null);
+        baked.setPadding(0, UiKt.dp(this, 2), 0, UiKt.dp(this, 10));
+        root.addView(baked);
 
         setContentView(root);
 
@@ -249,54 +165,11 @@ public final class TemplateMakeActivity extends AppCompatActivity {
         playMusic();
     }
 
-    private TextView sectionLabel(String t) {
-        TextView l = UiKt.label$default(this, t, 13.0f, C.INSTANCE.getText(), true, 0, 16, null);
-        l.setPadding(UiKt.dp(this, 12), UiKt.dp(this, 6), 0, UiKt.dp(this, 4));
-        return l;
-    }
-
-    private TextView chip(String text, boolean selected, View.OnClickListener click) {
-        TextView t = UiKt.label(this, text, 12.0f, -1, !selected, 17);
-        styleChip(t, selected);
-        t.setOnClickListener(click);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        lp.leftMargin = UiKt.dp(this, 8);
-        t.setLayoutParams(lp);
-        return t;
-    }
-
-    private void styleChip(TextView t, boolean selected) {
-        t.setPadding(UiKt.dp(this, 12), UiKt.dp(this, 7), UiKt.dp(this, 12), UiKt.dp(this, 7));
-        if (selected) {
-            t.setBackground(UiKt.gradient$default(C.INSTANCE.getSaffron(), C.INSTANCE.getPink(),
-                    UiKt.dp(this, 16), null, 8, null));
-            t.setTextColor(-1);
-        } else {
-            t.setBackground(UiKt.solid(C.INSTANCE.getCard(), UiKt.dp(this, 16), C.INSTANCE.getStroke(), UiKt.dp(this, 1)));
-            t.setTextColor(C.INSTANCE.getDim());
-        }
-    }
-
-    private void refreshChips(LinearLayout row, int selected) {
-        for (int i = 0; i < row.getChildCount(); i++) {
-            View v = row.getChildAt(i);
-            if (v instanceof TextView) styleChip((TextView) v, i == selected);
-        }
-    }
-
-    private void saveOverrides() {
-        getSharedPreferences("mukhda", 0).edit()
-                .putString("fx_" + projectId, fx)
-                .putString("filter_" + projectId, filter)
-                .apply();
-    }
-
     private void playMusic() {
         try {
             if (player != null) { player.stop(); player.release(); player = null; }
-            Uri u = customMusicUri != null ? Uri.parse(customMusicUri)
-                    : (track == null ? null : Music.INSTANCE.uri(this, track.getFile()));
+            if (track == null) return;
+            Uri u = Music.INSTANCE.uri(this, track.getFile());
             if (u == null) return;
             player = new MediaPlayer();
             player.setDataSource(this, u);
@@ -316,8 +189,7 @@ public final class TemplateMakeActivity extends AppCompatActivity {
         pd.setCancelable(false);
         pd.show();
 
-        final String musicUri = customMusicUri != null ? customMusicUri
-                : (track == null ? null : Music.INSTANCE.uri(this, track.getFile()).toString());
+        final String musicUri = track == null ? null : Music.INSTANCE.uri(this, track.getFile()).toString();
         final Project project = new Project(projectId, spec.title, clips, new ArrayList<Caption>(),
                 "reels", null, musicUri, 0.35f, spec.filter, spec.id, System.currentTimeMillis());
         final Composition composition;
