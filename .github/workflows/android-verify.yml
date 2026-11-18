@@ -63,10 +63,13 @@ jobs:
             adb shell dumpsys activity activities | grep -i 'topResumedActivity' > artifacts/top-make.txt || true
             timeout 25m ./gradlew --no-daemon :app:connectedDebugAndroidTest --continue || true
             adb logcat -d > artifacts/logcat.txt || true
-            MP=$(adb shell "find /data /storage /mnt -name test_export_birthday.mp4 2>/dev/null | head -1" | tr -d '\r')
+            adb shell "mount | grep -Ei 'sdcard|emulated|fuse|media'" || true
+            adb shell "ls -la /storage/emulated/ /storage/emulated/0/Android/data/ 2>&1 | head -30" || true
+            adb shell "find / -name 'test_export_birthday.mp4' 2>/dev/null | head -5" || true
+            MP=$(adb shell "find / -name test_export_birthday.mp4 2>/dev/null | head -1" | tr -d '\r')
             echo "found mp4: $MP"
             [ -n "$MP" ] && adb pull "$MP" artifacts/test_export_birthday.mp4 || true
-            FR=$(adb shell "find /data /storage /mnt -name export_f0.png 2>/dev/null | head -1" | tr -d '\r')
+            FR=$(adb shell "find / -name export_f0.png 2>/dev/null | head -1" | tr -d '\r')
             echo "found frame: $FR"
             [ -n "$FR" ] && adb pull "$(dirname "$FR")" artifacts/frames || true
             ls -la artifacts || true
