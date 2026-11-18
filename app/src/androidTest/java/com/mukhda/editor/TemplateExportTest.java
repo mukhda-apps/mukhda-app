@@ -173,6 +173,10 @@ public class TemplateExportTest {
             fr.recycle();
         }
         mmr.release();
+        System.out.println("EXPORT-TEST pkg=" + ctx.getPackageName());
+        System.out.println("EXPORT-TEST out=" + out.getAbsolutePath() + " exists=" + out.exists());
+        System.out.println("EXPORT-TEST filesDir=" + ctx.getFilesDir().getAbsolutePath());
+        System.out.println("EXPORT-TEST extDir=" + ctx.getExternalFilesDir(null));
 
         // Copy evidence into internal storage so CI can pull it via /data/data (FUSE
         // external-storage views are per-app mount namespaces, invisible to adb root).
@@ -183,6 +187,7 @@ public class TemplateExportTest {
             File f = new File(framesDir, "export_f" + i + ".png");
             if (f.exists()) copy(f, new File(ciDir, "export_f" + i + ".png"));
         }
+        System.out.println("EXPORT-TEST ciDir=" + ciDir.getAbsolutePath() + " mp4there=" + new File(ciDir, "test_export_birthday.mp4").exists());
     }
 
     private static void copy(File src, File dst) throws Exception {
