@@ -180,7 +180,9 @@ public final class Exporter {
 
     public final int effectiveHeight(ExportOptions o) {
         Intrinsics.checkNotNullParameter(o, "o");
-        int min = Math.min(o.getHeightCap(), maxEncoderHeight(o.getHeightCap()));
+        int cap = o.getHeightCap();
+        // maxEncoderHeight() never returns below 720, so caps at or under 720 need no codec query.
+        int min = cap <= 720 ? cap : Math.min(cap, maxEncoderHeight(cap));
         return o.getLite() ? Math.min(min, 720) : min;
     }
 
