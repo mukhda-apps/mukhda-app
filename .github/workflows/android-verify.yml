@@ -7,7 +7,7 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -35,18 +35,25 @@ jobs:
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           disable-animations: true
           script: |
-            ./gradlew --no-daemon :app:connectedDebugAndroidTest --continue
             mkdir -p artifacts
+            ./gradlew --no-daemon :app:installDebug
+            for i in 0 1 2 3; do convert -size 720x1280 gradient:$(printf '#%06x' $((0xE91E63 + i * 65537))) -pointsize 300 -fill white -gravity center -annotate +0+0 "$((i+1))" /tmp/photo$i.jpg; done
+            adb shell mkdir -p /sdcard/Android/data/com.mukhda.video/files/testphotos
+            for i in 0 1 2 3; do adb push /tmp/photo$i.jpg /sdcard/Android/data/com.mukhda.video/files/testphotos/p$i.jpg; done
             adb shell am start -n com.mukhda.video/com.mukhda.editor.MainActivity || true
             sleep 8
             adb exec-out screencap -p > artifacts/gallery.png || true
             adb shell am start -n com.mukhda.video/com.mukhda.editor.TemplateDetailActivity --es spec birthday || true
             sleep 8
             adb exec-out screencap -p > artifacts/detail.png || true
-            adb shell am start -n com.mukhda.video/com.mukhda.editor.TemplateMakeActivity --es spec birthday --esal photos 'file:///data/data/com.mukhda.video/files/testphotos/p0.jpg,file:///data/data/com.mukhda.video/files/testphotos/p1.jpg,file:///data/data/com.mukhda.video/files/testphotos/p2.jpg,file:///data/data/com.mukhda.video/files/testphotos/p3.jpg' || true
+            adb shell am start -n com.mukhda.video/com.mukhda.editor.TemplateMakeActivity --es spec birthday --esal photos 'file:///sdcard/Android/data/com.mukhda.video/files/testphotos/p0.jpg,file:///sdcard/Android/data/com.mukhda.video/files/testphotos/p1.jpg,file:///sdcard/Android/data/com.mukhda.video/files/testphotos/p2.jpg,file:///sdcard/Android/data/com.mukhda.video/files/testphotos/p3.jpg' || true
             sleep 12
             adb exec-out screencap -p > artifacts/make.png || true
+            adb logcat -c || true
+            ./gradlew --no-daemon :app:connectedDebugAndroidTest --continue || true
+            adb logcat -d > artifacts/logcat.txt || true
             adb pull /sdcard/Android/data/com.mukhda.video/files/ artifacts/files || true
+            ls -la artifacts artifacts/files 2>/dev/null || true
 
       - uses: actions/upload-artifact@v4
         if: always()

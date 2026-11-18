@@ -240,11 +240,14 @@ public final class Exporter {
     }
 
     public final Composition buildTemplateComposition(Context ctx, Project p, TemplateSpec spec, int width, int height) {
+        return buildTemplateComposition(ctx, p, spec, width, height, spec.durationMs(), 30);
+    }
+
+    public final Composition buildTemplateComposition(Context ctx, Project p, TemplateSpec spec, int width, int height, long totalMs, int frameRate) {
         TemplateEngine.applyOverrides(ctx, p.getId());
         List<Bitmap> photos = TemplatePhotos.load(ctx, p.getClips(), width, height);
-        long totalMs = spec.durationMs();
         MediaItem base = new MediaItem.Builder().setUri(Uri.parse("asset:///blank.png")).setImageDurationMs(totalMs).build();
-        EditedMediaItem baseItem = new EditedMediaItem.Builder(base).setDurationUs(totalMs * 1000).setFrameRate(30).build();
+        EditedMediaItem baseItem = new EditedMediaItem.Builder(base).setDurationUs(totalMs * 1000).setFrameRate(frameRate).build();
         ArrayList sequences = new ArrayList();
         ArrayList baseList = new ArrayList();
         baseList.add(baseItem);

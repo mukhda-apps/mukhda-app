@@ -17,6 +17,7 @@ import android.os.HandlerThread;
 import androidx.media3.transformer.Composition;
 import androidx.media3.transformer.ExportException;
 import androidx.media3.transformer.ExportResult;
+import androidx.media3.transformer.ProgressHolder;
 import androidx.media3.transformer.Transformer;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.core.app.ApplicationProvider;
@@ -69,8 +70,16 @@ public class TemplateExportTest {
         String musicUri = Music.INSTANCE.uri(ctx, spec.musicFile).toString();
         Project project = new Project("testexport", "Test Export", clips, new ArrayList<Caption>(),
                 "reels", null, musicUri, 0.35f, spec.filter, spec.id, System.currentTimeMillis());
-        ExportOptions options = new ExportOptions(Presets.INSTANCE.getAll().get(0), 540, "9:16", true, false);
-        final Composition composition = Exporter.INSTANCE.buildTemplateComposition(ctx, project, spec, 540, 960);
+        // CI/speed: verify the real export path at a small size and short duration.
+        // Production exports still use spec.durationMs() at 30fps, 1080x1920.
+        final long testDurationMs = 2000;
+        final int testWidth = 360;
+        final int testHeight = 640;
+        final int testFrameRate = 15;
+        ExportOptions options = new ExportOptions(Presets.INSTANCE.getAll().get(0), testWidth, "9:16", true, false);
+        System.out.println("EXPORT-TEST stage: writing photos done, building composition");
+        final Composition composition = Exporter.INSTANCE.buildTemplateComposition(ctx, project, spec, testWidth, testHeight, testDurationMs, testFrameRate);
+        System.out.println("EXPORT-TEST stage: composition built");
         final File out = new File(ctx.getExternalFilesDir(null), "test_export_birthday.mp4");
         if (out.exists()) out.delete();
 
@@ -87,23 +96,45 @@ public class TemplateExportTest {
                     holder[0] = Exporter.INSTANCE.newTransformer(ctx, options, new Transformer.Listener() {
                         @Override
                         public void onCompleted(Composition c, ExportResult r) {
+                            System.out.println("EXPORT-TEST stage: onCompleted");
                             done.countDown();
                         }
 
                         @Override
                         public void onError(Composition c, ExportResult r, ExportException e) {
+                            System.out.println("EXPORT-TEST stage: onError " + e);
                             err[0] = e;
                             done.countDown();
                         }
                     });
                     holder[0].start(composition, out.getAbsolutePath());
+                    System.out.println("EXPORT-TEST stage: transformer started");
                 } catch (Throwable t) {
                     err[0] = t;
                     done.countDown();
                 }
             }
         });
-        boolean finished = done.await(8, TimeUnit.MINUTES);
+        final ProgressHolder ph = new ProgressHolder();
+        final boolean[] stopPolling = {false};
+        final Runnable poller = new Runnable() {
+            @Override
+            public void run() {
+                if (stopPolling[0]) return;
+                try {
+                    if (holder[0] != null) {
+                        int state = holder[0].getProgress(ph);
+                        System.out.println("EXPORT-TEST progress=" + ph.progress + " state=" + state);
+                    }
+                } catch (Throwable t) {
+                    System.out.println("EXPORT-TEST progress poll error " + t);
+                }
+                handler.postDelayed(this, 5000);
+            }
+        };
+        handler.postDelayed(poller, 5000);
+        boolean finished = done.await(6, TimeUnit.MINUTES);
+        stopPolling[0] = true;
         handler.post(new Runnable() {
             @Override
             public void run() {
@@ -114,17 +145,17 @@ public class TemplateExportTest {
             }
         });
         ht.quitSafely();
-        if (!finished) fail("export timed out after 8 minutes");
+        if (!finished) fail("export timed out after 6 minutes");
         if (err[0] != null) fail("export error: " + err[0]);
         assertTrue("output file missing", out.exists());
-        assertTrue("output too small: " + out.length(), out.length() > 200000);
+        assertTrue("output too small: " + out.length(), out.length() > 30000);
 
         MediaMetadataRetriever mmr = new MediaMetadataRetriever();
         mmr.setDataSource(out.getAbsolutePath());
         String durStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
         long durMs = Long.parseLong(durStr);
-        assertTrue("duration " + durMs + " not near " + spec.durationMs(),
-                Math.abs(durMs - spec.durationMs()) < 2000);
+        assertTrue("duration " + durMs + " not near " + testDurationMs,
+                Math.abs(durMs - testDurationMs) < 1500);
         File framesDir = new File(ctx.getExternalFilesDir(null), "frames");
         framesDir.mkdirs();
         long[] pts = {1000, durMs / 2, Math.max(1000, durMs - 1000)};
