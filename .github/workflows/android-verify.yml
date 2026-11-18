@@ -64,8 +64,8 @@ jobs:
             adb shell dumpsys activity activities | grep -i 'topResumedActivity' > artifacts/top-make.txt || true
             timeout 25m ./gradlew --no-daemon :app:connectedDebugAndroidTest --continue || true
             adb logcat -d > artifacts/logcat.txt || true
-            adb shell ls -la /data/data/com.mukhda.video/files/ci_export/ || true
-            adb pull /data/data/com.mukhda.video/files/ci_export artifacts/ci_export || true
+            adb shell ls -la /data/data/com.mukhda.video.test/files/ci_export/ || true
+            adb pull /data/data/com.mukhda.video.test/files/ci_export artifacts/ci_export || true
             ls -la artifacts || true
 
       - uses: actions/upload-artifact@v4
