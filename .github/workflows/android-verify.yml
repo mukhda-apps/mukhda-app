@@ -25,6 +25,12 @@ jobs:
       - name: Build debug + androidTest APKs
         run: ./gradlew --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest
 
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
       - name: Instrumented tests on emulator (real video export)
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -40,16 +46,17 @@ jobs:
             adb shell mkdir -p /sdcard/Android/data/com.mukhda.video/files/testphotos
             for i in 0 1 2 3; do adb push test-fixtures/p$i.jpg /sdcard/Android/data/com.mukhda.video/files/testphotos/p$i.jpg; done
             adb shell am start -n com.mukhda.video/com.mukhda.editor.MainActivity || true
-            sleep 8
+            sleep 15
             adb exec-out screencap -p > artifacts/gallery.png || true
             adb shell am start -n com.mukhda.video/com.mukhda.editor.TemplateDetailActivity --es spec birthday || true
-            sleep 8
+            sleep 12
             adb exec-out screencap -p > artifacts/detail.png || true
             adb shell am start -n com.mukhda.video/com.mukhda.editor.TemplateMakeActivity --es spec birthday --esal photos 'file:///sdcard/Android/data/com.mukhda.video/files/testphotos/p0.jpg,file:///sdcard/Android/data/com.mukhda.video/files/testphotos/p1.jpg,file:///sdcard/Android/data/com.mukhda.video/files/testphotos/p2.jpg,file:///sdcard/Android/data/com.mukhda.video/files/testphotos/p3.jpg' || true
             sleep 12
             adb exec-out screencap -p > artifacts/make.png || true
             adb logcat -c || true
-            ./gradlew --no-daemon :app:connectedDebugAndroidTest --continue || true
+            ( for i in $(seq 1 30); do sleep 60; adb logcat -d > artifacts/logcat-live.txt 2>/dev/null; done ) &
+            timeout 25m ./gradlew --no-daemon :app:connectedDebugAndroidTest --continue || true
             adb logcat -d > artifacts/logcat.txt || true
             adb pull /sdcard/Android/data/com.mukhda.video/files/ artifacts/files || true
             ls -la artifacts artifacts/files 2>/dev/null || true
