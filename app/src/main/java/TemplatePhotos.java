@@ -47,6 +47,7 @@ public final class TemplatePhotos {
             in2.close();
             return b;
         } catch (Exception e) {
+            System.out.println("TemplatePhotos decode failed for " + uriStr + ": " + e);
             return null;
         }
     }

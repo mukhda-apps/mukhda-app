@@ -47,8 +47,12 @@ jobs:
             sleep 3
             adb wait-for-device
             ./gradlew --no-daemon :app:installDebug
-            adb shell mkdir -p /sdcard/Android/data/com.mukhda.video/files/testphotos
-            for i in 0 1 2 3; do adb push test-fixtures/p$i.jpg /sdcard/Android/data/com.mukhda.video/files/testphotos/p$i.jpg; done
+            # Fixtures must live in the app's INTERNAL files dir, owned by the app uid:
+            # root-pushed files under /sdcard/Android/data are invisible to the app through FUSE.
+            adb shell mkdir -p /data/user/0/com.mukhda.video/files/testphotos
+            for i in 0 1 2 3; do adb push test-fixtures/p$i.jpg /data/user/0/com.mukhda.video/files/testphotos/p$i.jpg; done
+            APPUID=$(adb shell stat -c '%u:%g' /data/user/0/com.mukhda.video | tr -d '\r')
+            adb shell chown -R $APPUID /data/user/0/com.mukhda.video/files/testphotos
             adb logcat -c || true
             adb shell am start -n com.mukhda.video/com.mukhda.editor.MainActivity || true
             sleep 15
@@ -58,7 +62,7 @@ jobs:
             sleep 12
             adb exec-out screencap -p > artifacts/detail.png || true
             adb shell dumpsys activity activities | grep -i 'topResumedActivity' > artifacts/top-detail.txt || true
-            adb shell am start -n com.mukhda.video/com.mukhda.editor.TemplateMakeActivity --es spec birthday --esal photos 'file:///sdcard/Android/data/com.mukhda.video/files/testphotos/p0.jpg,file:///sdcard/Android/data/com.mukhda.video/files/testphotos/p1.jpg,file:///sdcard/Android/data/com.mukhda.video/files/testphotos/p2.jpg,file:///sdcard/Android/data/com.mukhda.video/files/testphotos/p3.jpg' || true
+            adb shell am start -n com.mukhda.video/com.mukhda.editor.TemplateMakeActivity --es spec birthday --esal photos 'file:///data/user/0/com.mukhda.video/files/testphotos/p0.jpg,file:///data/user/0/com.mukhda.video/files/testphotos/p1.jpg,file:///data/user/0/com.mukhda.video/files/testphotos/p2.jpg,file:///data/user/0/com.mukhda.video/files/testphotos/p3.jpg' || true
             sleep 12
             adb exec-out screencap -p > artifacts/make.png || true
             adb shell dumpsys activity activities | grep -i 'topResumedActivity' > artifacts/top-make.txt || true
