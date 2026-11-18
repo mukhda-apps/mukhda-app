@@ -26,6 +26,7 @@ public final class TemplateOverlay extends BitmapOverlay {
     public void configure(Size videoSize) {
         this.w = videoSize.getWidth();
         this.h = videoSize.getHeight();
+        System.out.println("EXPORT-TEST overlay configure: " + w + "x" + h);
         if (frame == null || frame.getWidth() != w || frame.getHeight() != h) {
             if (frame != null) frame.recycle();
             frame = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
@@ -39,8 +40,16 @@ public final class TemplateOverlay extends BitmapOverlay {
         long t = presentationTimeUs / 1000;
         if (frameCanvas != null && t != lastT) {
             frame.eraseColor(0);
-            TemplateEngine.drawFrame(frameCanvas, w, h, spec, photos, t);
+            try {
+                TemplateEngine.drawFrame(frameCanvas, w, h, spec, photos, t);
+            } catch (Throwable e) {
+                System.out.println("EXPORT-TEST overlay draw error: " + e);
+            }
             lastT = t;
+            if (t < 3000) {
+                int cx = frame.getPixel(w / 2, h / 2);
+                System.out.println("EXPORT-TEST overlay frame t=" + t + " centerPixel=" + Integer.toHexString(cx) + " photos=" + photos.size());
+            }
         }
         return frame;
     }
