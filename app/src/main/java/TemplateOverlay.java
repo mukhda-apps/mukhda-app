@@ -47,7 +47,7 @@ public final class TemplateOverlay extends BitmapOverlay {
 
     @Override
     public OverlaySettings getOverlaySettings(long presentationTimeUs) {
-        return new OverlaySettings.Builder().setScale(2f, 2f).build();
+        return new OverlaySettings.Builder().setScale(1f, 1f).build();
     }
 
     @Override

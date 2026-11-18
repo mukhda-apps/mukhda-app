@@ -11,6 +11,7 @@ android {
         targetSdk 34
         versionCode 7
         versionName '1.1.2'
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -37,6 +38,9 @@ android {
         abortOnError false
         checkReleaseBuilds false
     }
+    testOptions {
+        unitTests.includeAndroidResources = true
+    }
 }
 dependencies {
     implementation 'androidx.core:core-ktx:1.13.1'
@@ -53,4 +57,8 @@ dependencies {
     implementation "androidx.media3:media3-common:$m3"
     implementation 'com.alphacephei:vosk-android:0.3.75'
     testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.13'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test:core:1.6.1'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
 }
