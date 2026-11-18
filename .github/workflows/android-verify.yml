@@ -63,9 +63,12 @@ jobs:
             adb shell dumpsys activity activities | grep -i 'topResumedActivity' > artifacts/top-make.txt || true
             timeout 25m ./gradlew --no-daemon :app:connectedDebugAndroidTest --continue || true
             adb logcat -d > artifacts/logcat.txt || true
-            adb shell ls -la /data/media/0/Android/data/com.mukhda.video/files/ || true
-            adb pull /data/media/0/Android/data/com.mukhda.video/files/test_export_birthday.mp4 artifacts/test_export_birthday.mp4 || true
-            adb pull /data/media/0/Android/data/com.mukhda.video/files/frames artifacts/frames || true
+            MP=$(adb shell "find /data /storage /mnt -name test_export_birthday.mp4 2>/dev/null | head -1" | tr -d '\r')
+            echo "found mp4: $MP"
+            [ -n "$MP" ] && adb pull "$MP" artifacts/test_export_birthday.mp4 || true
+            FR=$(adb shell "find /data /storage /mnt -name export_f0.png 2>/dev/null | head -1" | tr -d '\r')
+            echo "found frame: $FR"
+            [ -n "$FR" ] && adb pull "$(dirname "$FR")" artifacts/frames || true
             ls -la artifacts || true
 
       - uses: actions/upload-artifact@v4
