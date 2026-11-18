@@ -42,6 +42,9 @@ jobs:
           disable-animations: true
           script: |
             mkdir -p artifacts
+            adb root || true
+            sleep 3
+            adb wait-for-device
             ./gradlew --no-daemon :app:installDebug
             adb shell mkdir -p /sdcard/Android/data/com.mukhda.video/files/testphotos
             for i in 0 1 2 3; do adb push test-fixtures/p$i.jpg /sdcard/Android/data/com.mukhda.video/files/testphotos/p$i.jpg; done
@@ -60,8 +63,8 @@ jobs:
             adb shell dumpsys activity activities | grep -i 'topResumedActivity' > artifacts/top-make.txt || true
             timeout 25m ./gradlew --no-daemon :app:connectedDebugAndroidTest --continue || true
             adb logcat -d > artifacts/logcat.txt || true
-            adb exec-out run-as com.mukhda.video cat /sdcard/Android/data/com.mukhda.video/files/test_export_birthday.mp4 > artifacts/test_export_birthday.mp4 || true
-            for f in 0 1 2; do adb exec-out run-as com.mukhda.video cat /sdcard/Android/data/com.mukhda.video/files/frames/export_f$f.png > artifacts/export_f$f.png || true; done
+            adb pull /sdcard/Android/data/com.mukhda.video/files/test_export_birthday.mp4 artifacts/test_export_birthday.mp4 || true
+            adb pull /sdcard/Android/data/com.mukhda.video/files/frames artifacts/frames || true
             ls -la artifacts || true
 
       - uses: actions/upload-artifact@v4
