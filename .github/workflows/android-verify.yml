@@ -37,9 +37,8 @@ jobs:
           script: |
             mkdir -p artifacts
             ./gradlew --no-daemon :app:installDebug
-            for i in 0 1 2 3; do convert -size 720x1280 gradient:$(printf '#%06x' $((0xE91E63 + i * 65537))) -pointsize 300 -fill white -gravity center -annotate +0+0 "$((i+1))" /tmp/photo$i.jpg; done
             adb shell mkdir -p /sdcard/Android/data/com.mukhda.video/files/testphotos
-            for i in 0 1 2 3; do adb push /tmp/photo$i.jpg /sdcard/Android/data/com.mukhda.video/files/testphotos/p$i.jpg; done
+            for i in 0 1 2 3; do adb push test-fixtures/p$i.jpg /sdcard/Android/data/com.mukhda.video/files/testphotos/p$i.jpg; done
             adb shell am start -n com.mukhda.video/com.mukhda.editor.MainActivity || true
             sleep 8
             adb exec-out screencap -p > artifacts/gallery.png || true
