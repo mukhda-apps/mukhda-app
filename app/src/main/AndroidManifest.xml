@@ -43,6 +43,13 @@
         <activity
             android:name="com.mukhda.editor.MusicActivity"
             android:exported="false"/>
+        <activity
+            android:name="com.mukhda.editor.TemplateDetailActivity"
+            android:exported="false"/>
+        <activity
+            android:name="com.mukhda.editor.TemplateMakeActivity"
+            android:exported="false"
+            android:configChanges="screenSize|orientation|keyboardHidden"/>
         <provider
             android:name="androidx.core.content.FileProvider"
             android:exported="false"

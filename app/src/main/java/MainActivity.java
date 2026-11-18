@@ -990,7 +990,7 @@ public final class MainActivity extends AppCompatActivity {
         frameLayout.setClipToOutline(true);
         frameLayout.setOutlineProvider(ViewOutlineProvider.BACKGROUND);
         TemplateView pv = new TemplateView(mainActivity);
-        pv.setTemplate(sp, null);
+        pv.setTemplate(sp, SamplePhotos.get(Math.max(sp.photoCount, 1)));
         pv.play();
         frameLayout.addView(pv, new FrameLayout.LayoutParams(UiKt.getMATCH(), UiKt.dp(mainActivity, 190)));
         LinearLayout linearLayout = new LinearLayout(mainActivity);
@@ -1019,10 +1019,9 @@ public final class MainActivity extends AppCompatActivity {
         frameLayout.setOnClickListener(new View.OnClickListener() {
             @Override
             public final void onClick(View view) {
-                mainActivity.pendingMode = "template";
-                mainActivity.pendingSpec = sp;
-                mainActivity.pendingTemplate = mainActivity.specToTemplate(sp);
-                mainActivity.pickMedia.launch(new String[]{"image/*"});
+                android.content.Intent in = new android.content.Intent(mainActivity, TemplateDetailActivity.class);
+                in.putExtra(TemplateDetailActivity.EXTRA_SPEC, sp.id);
+                mainActivity.startActivity(in);
             }
         });
         return frameLayout;
