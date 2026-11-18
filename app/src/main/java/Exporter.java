@@ -253,10 +253,16 @@ public final class Exporter {
         TemplateEngine.applyOverrides(ctx, p.getId());
         List<Bitmap> photos = TemplatePhotos.load(ctx, p.getClips(), width, height);
         MediaItem base = new MediaItem.Builder().setUri(Uri.parse("asset:///blank.png")).setImageDurationMs(totalMs).build();
-        EditedMediaItem baseItem = new EditedMediaItem.Builder(base).setDurationUs(totalMs * 1000).setFrameRate(frameRate).build();
+        ArrayList effects = new ArrayList();
+        effects.add(Presentation.createForWidthAndHeight(width, height, 0));
+        effects.add(new OverlayEffect(ImmutableList.of(new TemplateOverlay(spec, photos))));
+        // Apply video effects at the EditedMediaItem level (media3 demo pattern):
+        // composition-level video effects are not applied reliably on all inputs.
+        EditedMediaItem.Builder baseBuilder = new EditedMediaItem.Builder(base).setDurationUs(totalMs * 1000).setFrameRate(frameRate);
+        baseBuilder.setEffects(new Effects(CollectionsKt.emptyList(), effects));
         ArrayList sequences = new ArrayList();
         ArrayList baseList = new ArrayList();
-        baseList.add(baseItem);
+        baseList.add(baseBuilder.build());
         sequences.add(new EditedMediaItemSequence(baseList));
         if (p.getMusicUri() != null) {
             Media media = Media.INSTANCE;
@@ -271,10 +277,7 @@ public final class Exporter {
             EditedMediaItem musicItem = new EditedMediaItem.Builder(uriBuilder.build()).setRemoveVideo(true).build();
             sequences.add(new EditedMediaItemSequence((List<EditedMediaItem>) CollectionsKt.listOf(musicItem), loop));
         }
-        ArrayList effects = new ArrayList();
-        effects.add(Presentation.createForWidthAndHeight(width, height, 0));
-        effects.add(new OverlayEffect(ImmutableList.of(new TemplateOverlay(spec, photos))));
-        return new Composition.Builder(sequences).experimentalSetForceAudioTrack(true).setHdrMode(2).setEffects(new Effects(CollectionsKt.emptyList(), effects)).build();
+        return new Composition.Builder(sequences).experimentalSetForceAudioTrack(true).setHdrMode(2).build();
     }
 
     public final Transformer newTransformer(Context ctx, ExportOptions o, Transformer.Listener listener) {
