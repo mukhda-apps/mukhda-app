@@ -70,6 +70,7 @@ public final class MainActivity extends AppCompatActivity {
     public boolean started;
     public int tab;
     public String category = "For you";
+    public String group = "All";
     public final Handler main = new Handler(Looper.getMainLooper());
     public String pendingMode = "project";
 
@@ -285,6 +286,7 @@ public final class MainActivity extends AppCompatActivity {
             lp$default4.topMargin = UiKt.dp(mainActivity, 16);
             Unit unit4 = Unit.INSTANCE;
             col.addView(horizontalScrollView, lp$default4);
+            addSubChips(mainActivity, col);
             int i3 = 2;
             Iterator it = CollectionsKt.chunked(specList(this.category), 2).iterator();
             while (true) {
@@ -413,6 +415,7 @@ public final class MainActivity extends AppCompatActivity {
         Intrinsics.checkNotNullParameter(this$0, "this$0");
         Intrinsics.checkNotNullParameter(c, "$c");
         this$0.category = c;
+        this$0.group = "All";
         this$0.show(0);
     }
 
@@ -914,6 +917,7 @@ public final class MainActivity extends AppCompatActivity {
                 @Override
                 public final void onClick(View view) {
                     mainActivity.category = str;
+                    mainActivity.group = "All";
                     mainActivity.refreshSpecGrid();
                     show(1);
                 }
@@ -928,6 +932,7 @@ public final class MainActivity extends AppCompatActivity {
         LinearLayout.LayoutParams cslp = UiKt.lp$default(UiKt.getMATCH(), UiKt.getWRAP(), 0.0f, 4, null);
         cslp.topMargin = UiKt.dp(mainActivity, 12);
         col.addView(chipScroll, cslp);
+        addSubChips(mainActivity, col);
         final LinearLayout grid = new LinearLayout(mainActivity);
         grid.setOrientation(1);
         LinearLayout.LayoutParams glp = UiKt.lp$default(UiKt.getMATCH(), UiKt.getWRAP(), 0.0f, 4, null);
@@ -947,11 +952,45 @@ public final class MainActivity extends AppCompatActivity {
         });
     }
 
+    public final void addSubChips(final MainActivity mainActivity, LinearLayout col) {
+        java.util.List<String> groups = TemplateSpec.groupsOf(this.category);
+        if (groups.isEmpty()) return;
+        java.util.ArrayList<String> all = new java.util.ArrayList<String>();
+        all.add("All");
+        all.addAll(groups);
+        LinearLayout row = new LinearLayout(mainActivity);
+        for (final String g : all) {
+            final boolean sel = Intrinsics.areEqual(g, this.group);
+            TextView chip = new TextView(mainActivity);
+            chip.setText(g);
+            chip.setTextSize(12.0f);
+            chip.setTextColor(sel ? -1 : C.INSTANCE.getDim());
+            chip.setPadding(UiKt.dp(mainActivity, 12), UiKt.dp(mainActivity, 5), UiKt.dp(mainActivity, 12), UiKt.dp(mainActivity, 5));
+            chip.setBackground(sel ? UiKt.solid$default(C.INSTANCE.getPink(), UiKt.dp(mainActivity, 15), 0, 0, 12, null) : UiKt.solid(C.INSTANCE.getCard(), UiKt.dp(mainActivity, 15), C.INSTANCE.getStroke(), UiKt.dp(mainActivity, 1)));
+            chip.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public final void onClick(View view) {
+                    mainActivity.group = g;
+                    mainActivity.show(mainActivity.tab);
+                }
+            });
+            LinearLayout.LayoutParams clp = UiKt.lp$default(UiKt.getWRAP(), UiKt.getWRAP(), 0.0f, 4, null);
+            clp.rightMargin = UiKt.dp(mainActivity, 6);
+            row.addView(chip, clp);
+        }
+        HorizontalScrollView scroll = new HorizontalScrollView(mainActivity);
+        scroll.setHorizontalScrollBarEnabled(false);
+        scroll.addView(row);
+        LinearLayout.LayoutParams slp = UiKt.lp$default(UiKt.getMATCH(), UiKt.getWRAP(), 0.0f, 4, null);
+        slp.topMargin = UiKt.dp(mainActivity, 8);
+        col.addView(scroll, slp);
+    }
+
     public final void refreshSpecGrid() {
     }
 
     public final List<TemplateSpec> specList(String cat) {
-        List<TemplateSpec> base = TemplateSpec.inCategory(cat);
+        List<TemplateSpec> base = TemplateSpec.inGroup(cat, this.group);
         String q = specQuery == null ? "" : specQuery.trim().toLowerCase();
         if (q.length() == 0) return base;
         ArrayList<TemplateSpec> out = new ArrayList<TemplateSpec>();
@@ -992,7 +1031,7 @@ public final class MainActivity extends AppCompatActivity {
         TemplateView pv = new TemplateView(mainActivity);
         pv.setTemplate(sp, SamplePhotos.get(Math.max(sp.photoCount, 1)));
         pv.play();
-        frameLayout.addView(pv, new FrameLayout.LayoutParams(UiKt.getMATCH(), UiKt.dp(mainActivity, 190)));
+        frameLayout.addView(pv, new FrameLayout.LayoutParams(UiKt.getMATCH(), UiKt.dp(mainActivity, 250)));
         LinearLayout linearLayout = new LinearLayout(mainActivity);
         linearLayout.setOrientation(1);
         linearLayout.setPadding(UiKt.dp(mainActivity, 12), UiKt.dp(mainActivity, 8), UiKt.dp(mainActivity, 12), UiKt.dp(mainActivity, 10));

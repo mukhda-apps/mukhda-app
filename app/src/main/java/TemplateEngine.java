@@ -133,8 +133,9 @@ public final class TemplateEngine {
         float scale2 = Math.max(photoRect.width() / bmp.getWidth(), photoRect.height() / bmp.getHeight()) * (1.04f + 0.14f * p);
         Matrix m2 = new Matrix();
         m2.setScale(scale2, scale2);
+        float offY2 = photoRect.height() - bmp.getHeight() * scale2;
         m2.postTranslate(photoRect.left + (photoRect.width() - bmp.getWidth() * scale2) / 2f + dirX * drift * photoRect.width(),
-                photoRect.top + (photoRect.height() - bmp.getHeight() * scale2) / 2f + dirY * drift * photoRect.height());
+                photoRect.top + (offY2 >= 0 ? offY2 / 2f : offY2 * 0.15f) + dirY * drift * photoRect.height());
         canvas.save();
         canvas.clipPath(maskPath(spec.mask, photoRect));
         canvas.drawBitmap(bmp, m2, paint);
@@ -156,6 +157,7 @@ public final class TemplateEngine {
         int cols;
         int rows;
         if ("split2".equals(spec.layout)) { cols = 1; rows = 2; }
+        else if ("split3".equals(spec.layout)) { cols = 1; rows = 3; }
         else if ("grid6".equals(spec.layout)) { cols = 2; rows = 3; }
         else { cols = 2; rows = 2; }
         int cells = cols * rows;
@@ -174,9 +176,12 @@ public final class TemplateEngine {
             Bitmap bmp = photos.get((base + i) % photos.size());
             float kb = 1.05f + 0.1f * cellP;
             float s = Math.max(cw / bmp.getWidth(), ch / bmp.getHeight()) * kb;
+            float cellOffY = ch - bmp.getHeight() * s;
             Matrix m = new Matrix();
             m.setScale(s, s);
-            m.postTranslate(x + (cw - bmp.getWidth() * s) / 2f, y + (ch - bmp.getHeight() * s) / 2f);
+            // Face-safe: when the photo overflows vertically, bias the crop toward the top
+            // (heads sit near the top of portrait photos) instead of center-cropping.
+            m.postTranslate(x + (cw - bmp.getWidth() * s) / 2f, y + (cellOffY >= 0 ? cellOffY / 2f : cellOffY * 0.15f));
             Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
             ColorMatrix cm = filterMatrix(filterOverride != null ? filterOverride : spec.filter);
             if (cm != null) paint.setColorFilter(new ColorMatrixColorFilter(cm));
@@ -313,7 +318,8 @@ public final class TemplateEngine {
         p.setAlpha((int) (255 * pop));
         p.setTextAlign(Paint.Align.CENTER);
         p.setShadowLayer(8f, 0f, 3f, 0x80000000);
-        float y = h * (idx % 2 == 0 ? 0.16f : 0.82f);
+        // Text stays in the lower half, below the face zone (top-biased crops put faces high).
+        float y = h * (idx % 2 == 0 ? 0.84f : 0.66f);
         float tw = p.measureText(line);
         Paint pill = new Paint(Paint.ANTI_ALIAS_FLAG);
         pill.setColor(Color.BLACK);

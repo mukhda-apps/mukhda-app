@@ -38,7 +38,9 @@ public class TemplateExportTest {
 
     private static File writePhoto(Context ctx, int idx) throws Exception {
         int[] cols = {0xFFE91E63, 0xFF3F51B5, 0xFF009688, 0xFFFF5722, 0xFF673AB7, 0xFF4CAF50};
-        Bitmap b = Bitmap.createBitmap(720, 1280, Bitmap.Config.ARGB_8888);
+        // Taller than 9:16 (3:8) so cover-cropping is real, with a red "head" marker
+        // near the top of the frame: if the crop cuts heads, the marker disappears.
+        Bitmap b = Bitmap.createBitmap(720, 1920, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(b);
         c.drawColor(cols[idx % cols.length]);
         Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -46,7 +48,10 @@ public class TemplateExportTest {
         p.setTextSize(360f);
         p.setTextAlign(Paint.Align.CENTER);
         p.setFakeBoldText(true);
-        c.drawText(String.valueOf(idx + 1), 360, 700, p);
+        c.drawText(String.valueOf(idx + 1), 360, 1050, p);
+        Paint head = new Paint(Paint.ANTI_ALIAS_FLAG);
+        head.setColor(0xFFFF0000);
+        c.drawCircle(360, 230, 60, head);
         File f = new File(ctx.getFilesDir(), "testphotos/p" + idx + ".jpg");
         f.getParentFile().mkdirs();
         FileOutputStream o = new FileOutputStream(f);
@@ -54,6 +59,19 @@ public class TemplateExportTest {
         o.close();
         b.recycle();
         return f;
+    }
+
+    private static int redPixelsInTopHalf(Bitmap fr) {
+        int w = fr.getWidth();
+        int h = fr.getHeight();
+        int red = 0;
+        for (int y = 0; y < h / 2; y += 2) {
+            for (int x = 0; x < w; x += 2) {
+                int px = fr.getPixel(x, y);
+                if (Color.red(px) > 150 && Color.green(px) < 90 && Color.blue(px) < 90) red++;
+            }
+        }
+        return red;
     }
 
     @Test
@@ -164,14 +182,18 @@ public class TemplateExportTest {
         File framesDir = new File(ctx.getExternalFilesDir(null), "frames");
         framesDir.mkdirs();
         long[] pts = {1000, durMs / 2, Math.max(1000, durMs - 1000)};
+        int maxRed = 0;
         for (int i = 0; i < pts.length; i++) {
             Bitmap fr = mmr.getFrameAtTime(pts[i] * 1000);
             assertNotNull("no frame at " + pts[i] + "ms", fr);
+            maxRed = Math.max(maxRed, redPixelsInTopHalf(fr));
             FileOutputStream fo = new FileOutputStream(new File(framesDir, "export_f" + i + ".png"));
             fr.compress(Bitmap.CompressFormat.PNG, 90, fo);
             fo.close();
             fr.recycle();
         }
+        assertTrue("head marker cropped out of export (red pixels top half=" + maxRed + ")",
+                maxRed > 40);
         mmr.release();
         System.out.println("EXPORT-TEST pkg=" + ctx.getPackageName());
         System.out.println("EXPORT-TEST out=" + out.getAbsolutePath() + " exists=" + out.exists());
