@@ -197,6 +197,9 @@ public class FullFlowQaTest {
         Thread.sleep(1200);
         clickIfExists(By.text("Images"), 4000);
         Thread.sleep(2500);
+        // the seeded photos live in the MukhdaQA album under Images
+        clickIfExists(By.text("MukhdaQA"), 4000);
+        Thread.sleep(2500);
         shot(stage + "_picker_images");
 
         long deadline = System.currentTimeMillis() + 90000;
