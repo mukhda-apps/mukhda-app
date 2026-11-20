@@ -210,8 +210,10 @@ public class FullFlowQaTest {
             dump(stage + "_picker_items");
             fail("picker shows only " + icons.size() + " selectable items, need " + n + " at " + stage);
         }
-        // Re-query before every click: the grid re-renders on each selection and
-        // stale UiObject2 references throw StaleObjectException.
+        // Re-query before every tap: the grid re-renders on each selection and
+        // stale UiObject2 references throw StaleObjectException. Item thumbnails are
+        // NOT accessibility-clickable (the GridView handles taps at adapter level),
+        // so tap real coordinates instead of UiObject2.click().
         for (int i = 0; i < n; i++) {
             List<UiObject2> fresh = findPhotoIcons();
             if (fresh.size() < n) {
@@ -223,7 +225,8 @@ public class FullFlowQaTest {
                 dump(stage + "_select_reattach");
                 fail("lost picker items while selecting (" + fresh.size() + " left) at " + stage);
             }
-            fresh.get(i).click();
+            android.graphics.Rect b = fresh.get(i).getVisibleBounds();
+            device.click(b.centerX(), b.centerY());
             Thread.sleep(450);
         }
         shot(stage + "_picked");
@@ -238,7 +241,9 @@ public class FullFlowQaTest {
     }
 
     private static List<UiObject2> findPhotoIcons() {
-        List<UiObject2> l = device.findObjects(By.res(DOCSUI, "icon"));
+        // DocumentsUI grid item thumbnails
+        List<UiObject2> l = device.findObjects(By.res(DOCSUI, "icon_thumb"));
+        if (l == null || l.isEmpty()) l = device.findObjects(By.res(DOCSUI, "icon"));
         if (l == null || l.isEmpty()) {
             // fallback: content-area image views only (never toolbar buttons)
             List<UiObject2> all = device.findObjects(By.pkg(DOCSUI).clazz("android.widget.ImageView"));
