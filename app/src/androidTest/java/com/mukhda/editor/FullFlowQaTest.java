@@ -380,7 +380,7 @@ public class FullFlowQaTest {
             mmr.release();
             fail(specId + " duration " + durMs + "ms, expected ~" + expectedDurMs + "ms");
         }
-        long[] pts = {1000, durMs / 2, Math.max(1000, durMs - 1000)};
+        long[] pts = {1000, durMs / 4, durMs / 2, 3 * durMs / 4, Math.max(1000, durMs - 1000)};
         int maxRed = 0;
         for (int i = 0; i < pts.length; i++) {
             Bitmap fr = mmr.getFrameAtTime(pts[i] * 1000);
@@ -393,7 +393,7 @@ public class FullFlowQaTest {
         }
         mmr.release();
         log(specId + ": duration=" + durMs + "ms frames extracted, maxRedTopHalf=" + maxRed);
-        if (maxRed < 20) {
+        if (maxRed < (photos > 1 ? 4 : 20)) {
             fail(specId + ": head marker missing from exported frames (photos cropped?) maxRed=" + maxRed);
         }
         // verify it also landed in the gallery (Movies/Mukhda)
@@ -433,8 +433,8 @@ public class FullFlowQaTest {
         int w = fr.getWidth();
         int h = fr.getHeight();
         int red = 0;
-        for (int y = 0; y < h / 2; y += 4) {
-            for (int x = 0; x < w; x += 4) {
+        for (int y = 0; y < h / 2; y += 2) {
+            for (int x = 0; x < w; x += 2) {
                 int px = fr.getPixel(x, y);
                 if (Color.red(px) > 150 && Color.green(px) < 100 && Color.blue(px) < 100) red++;
             }

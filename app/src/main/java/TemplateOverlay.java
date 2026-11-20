@@ -15,6 +15,10 @@ public final class TemplateOverlay extends BitmapOverlay {
     private int h = -1;
     private Bitmap frame;
     private Canvas frameCanvas;
+    // Ring of bitmaps: returning the SAME mutated Bitmap every frame can make the GL
+    // texture upload skip changes (blank/stale frames in 2 and 4 photo exports).
+    private final Bitmap[] ring = new Bitmap[4];
+    private int ringIdx = 0;
     private long lastT = -1;
 
     public TemplateOverlay(TemplateSpec spec, List<Bitmap> photos) {
@@ -27,7 +31,7 @@ public final class TemplateOverlay extends BitmapOverlay {
         this.w = videoSize.getWidth();
         this.h = videoSize.getHeight();
         if (frame == null || frame.getWidth() != w || frame.getHeight() != h) {
-            if (frame != null) frame.recycle();
+            for (int i = 0; i < ring.length; i++) { if (ring[i] != null) ring[i].recycle(); ring[i] = null; }
             frame = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
             frameCanvas = new Canvas(frame);
             lastT = -1;
@@ -38,6 +42,10 @@ public final class TemplateOverlay extends BitmapOverlay {
     public Bitmap getBitmap(long presentationTimeUs) {
         long t = presentationTimeUs / 1000;
         if (frameCanvas != null && t != lastT) {
+            ringIdx = (ringIdx + 1) % ring.length;
+            if (ring[ringIdx] == null) ring[ringIdx] = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+            frame = ring[ringIdx];
+            frameCanvas = new Canvas(frame);
             frame.eraseColor(0);
             try {
                 TemplateEngine.drawFrame(frameCanvas, w, h, spec, photos, t);
@@ -56,9 +64,7 @@ public final class TemplateOverlay extends BitmapOverlay {
 
     @Override
     public void release() {
-        if (frame != null) {
-            frame.recycle();
-            frame = null;
-        }
+        for (int i = 0; i < ring.length; i++) { if (ring[i] != null) ring[i].recycle(); ring[i] = null; }
+        frame = null;
     }
 }
