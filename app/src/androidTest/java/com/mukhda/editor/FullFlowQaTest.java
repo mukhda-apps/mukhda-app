@@ -210,26 +210,46 @@ public class FullFlowQaTest {
             dump(stage + "_picker_items");
             fail("picker shows only " + icons.size() + " selectable items, need " + n + " at " + stage);
         }
-        // Re-query before every tap: the grid re-renders on each selection and
-        // stale UiObject2 references throw StaleObjectException. Item thumbnails are
-        // NOT accessibility-clickable (the GridView handles taps at adapter level),
-        // so tap real coordinates instead of UiObject2.click().
-        for (int i = 0; i < n; i++) {
-            List<UiObject2> fresh = findPhotoIcons();
-            if (fresh.size() < n) {
-                Thread.sleep(2000);
-                fresh = findPhotoIcons();
+        // Selection strategy depends on the picker layout:
+        // - card/list layouts expose a CLICKABLE "icon" node -> accessibility click toggles selection
+        // - the compact image grid (icon_thumb) is not clickable; a plain tap opens preview,
+        //   so enter selection with a LONG PRESS on the first item, then tap the rest.
+        List<UiObject2> items = findPhotoIcons();
+        boolean clickableMode = items.get(0).isClickable();
+        log(stage + ": picker items=" + items.size() + " clickableMode=" + clickableMode);
+        if (clickableMode) {
+            for (int i = 0; i < n; i++) {
+                List<UiObject2> fresh = findPhotoIcons();
+                if (fresh.size() <= i) { Thread.sleep(2000); fresh = findPhotoIcons(); }
+                if (fresh.size() <= i) { shot(stage + "_select_reattach"); dump(stage + "_select_reattach"); fail("lost picker items at " + stage); }
+                fresh.get(i).click();
+                Thread.sleep(450);
             }
-            if (fresh.size() <= i) {
-                shot(stage + "_select_reattach");
-                dump(stage + "_select_reattach");
-                fail("lost picker items while selecting (" + fresh.size() + " left) at " + stage);
+        } else {
+            // long-press item 0 to enter selection mode
+            android.graphics.Rect b0 = items.get(0).getVisibleBounds();
+            device.swipe(b0.centerX(), b0.centerY(), b0.centerX(), b0.centerY(), 120);
+            Thread.sleep(800);
+            if (device.wait(Until.hasObject(By.textContains("selected")), 3000) == null) {
+                shot(stage + "_longpress_failed");
+                dump(stage + "_longpress_failed");
+                fail("long-press did not start selection at " + stage);
             }
-            android.graphics.Rect b = fresh.get(i).getVisibleBounds();
-            device.click(b.centerX(), b.centerY());
-            Thread.sleep(450);
+            for (int i = 1; i < n; i++) {
+                List<UiObject2> fresh = findPhotoIcons();
+                if (fresh.size() <= i) { Thread.sleep(2000); fresh = findPhotoIcons(); }
+                if (fresh.size() <= i) { shot(stage + "_select_reattach"); dump(stage + "_select_reattach"); fail("lost picker items at " + stage); }
+                android.graphics.Rect b = fresh.get(i).getVisibleBounds();
+                device.click(b.centerX(), b.centerY());
+                Thread.sleep(450);
+            }
         }
         shot(stage + "_picked");
+        if (device.findObject(By.textContains("selected")) == null) {
+            shot(stage + "_not_selected");
+            dump(stage + "_not_selected");
+            fail("no selection indicator after picking at " + stage);
+        }
         boolean confirmed = clickIfExists(By.text("Select"), 3000);
         if (!confirmed) confirmed = clickIfExists(By.desc("Select"), 2000);
         if (!confirmed) {
