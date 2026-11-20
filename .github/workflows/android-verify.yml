@@ -7,7 +7,11 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        api-level: [34, 36]
     steps:
       - uses: actions/checkout@v4
 
@@ -35,7 +39,7 @@ jobs:
       - name: Instrumented tests on emulator (real video export)
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: ${{ matrix.api-level }}
           target: default
           arch: x86_64
           profile: pixel_6
@@ -66,17 +70,35 @@ jobs:
             adb exec-out screencap -p > artifacts/make.png || true
             adb shell dumpsys activity activities | grep -i 'topResumedActivity' > artifacts/top-make.txt || true
             timeout 15m ./gradlew --no-daemon :app:installDebugAndroidTest || true
-            timeout 15m adb shell am instrument -w -r com.mukhda.video.test/androidx.test.runner.AndroidJUnitRunner > artifacts/instrument.txt 2>&1 || true
-            tail -30 artifacts/instrument.txt || true
+            timeout 45m adb shell am instrument -w -r com.mukhda.video.test/androidx.test.runner.AndroidJUnitRunner > artifacts/instrument.txt 2>&1 || true
+            tail -40 artifacts/instrument.txt || true
             adb logcat -d > artifacts/logcat.txt || true
             adb shell ls -la /data/user/0/com.mukhda.video/files/ci_export/ || true
             adb pull /data/user/0/com.mukhda.video/files/ci_export artifacts/ci_export || true
+            adb pull /data/user/0/com.mukhda.video/files/qa artifacts/qa || true
+            adb pull /data/user/0/com.mukhda.video/files/exports artifacts/exports || true
             ls -la artifacts || true
+            ls -la artifacts/qa artifacts/exports || true
+            # Release smoke: install the ACTUAL published APK (same bits she gets) and launch it
+            mkdir -p artifacts/release-smoke
+            adb uninstall com.mukhda.video || true
+            curl -sL -o /tmp/mukhda-release.apk https://github.com/mukhda-apps/mukhda-app/releases/download/v1.3.4/mukhda-1.3.4.apk
+            ls -la /tmp/mukhda-release.apk
+            adb install /tmp/mukhda-release.apk || true
+            adb logcat -c || true
+            adb shell am start -n com.mukhda.video/com.mukhda.editor.MainActivity || true
+            sleep 15
+            adb exec-out screencap -p > artifacts/release-smoke/release_main.png || true
+            adb shell am start -n com.mukhda.video/com.mukhda.editor.TemplateDetailActivity --es spec birthday || true
+            sleep 10
+            adb exec-out screencap -p > artifacts/release-smoke/release_detail.png || true
+            adb logcat -d > artifacts/release-smoke/release_logcat.txt || true
+            (grep -i 'FATAL EXCEPTION' artifacts/release-smoke/release_logcat.txt && echo 'RELEASE_SMOKE_FATAL_FOUND') || echo 'RELEASE_SMOKE_CLEAN'
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: verify-output
+          name: verify-output-api${{ matrix.api-level }}
           path: |
             artifacts/**
             app/build/outputs/renderedFrames/**

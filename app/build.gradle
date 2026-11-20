@@ -30,7 +30,13 @@ android {
         release {
             minifyEnabled false
             shrinkResources false
-            signingConfig signingConfigs.release
+            // Local builds use the real release cert; CI has no keystore and falls
+            // back to debug signing (same code, different signature).
+            if (file('/home/sandbox/mukhda-release.jks').exists()) {
+                signingConfig signingConfigs.release
+            } else {
+                signingConfig signingConfigs.debug
+            }
         }
     }
     packaging { resources { excludes += ['META-INF/DEPENDENCIES'] } }
@@ -61,4 +67,5 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'
     androidTestImplementation 'androidx.test:core:1.6.1'
     androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'androidx.test.uiautomator:uiautomator:2.3.0'
 }
