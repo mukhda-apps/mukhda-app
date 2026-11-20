@@ -27,6 +27,7 @@ public final class TemplateSpec {
     public final String beatFx;
     public final List<String> textLines;
     public final boolean isNew;
+    public final int variant;
 
     private TemplateSpec(String id, String title, String sub, String musicFile, int bpm, int photoCount,
                          int durationSec, String cats, String group, int c1, int c2, String filter,
@@ -39,6 +40,16 @@ public final class TemplateSpec {
         this.c1 = c1; this.c2 = c2; this.filter = filter; this.overlay = overlay; this.frame = "none";
         this.layout = layout; this.mask = mask;
         this.beatFx = beatFx; this.textLines = Arrays.asList(textLines.split("\\|")); this.isNew = isNew;
+        this.variant = nextVariant(catKey(cats));
+    }
+
+    private static final Map<String, Integer> VARIANTS = new HashMap<String, Integer>();
+    private static String catKey(String cats) { int i = cats.indexOf(','); return i < 0 ? cats : cats.substring(0, i); }
+    private static int nextVariant(String cat) {
+        Integer v = VARIANTS.get(cat);
+        int n = v == null ? 0 : v + 1;
+        VARIANTS.put(cat, n);
+        return n;
     }
 
     public long durationMs() { return durationSec * 1000L; }

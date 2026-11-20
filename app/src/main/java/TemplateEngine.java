@@ -48,7 +48,13 @@ public final class TemplateEngine {
                 if (p > 1f - xf / slotMs && idx + 1 < slots) {
                     float xa = (p - (1f - xf / slotMs)) / (xf / slotMs);
                     Bitmap nxt = photos.get((idx + 1) % n);
+                    int trans = spec.variant % 4;
+                    canvas.save();
+                    if (trans == 1) canvas.translate(w * (1f - xa), 0);
+                    else if (trans == 2) { float s = 0.8f + 0.2f * xa; canvas.scale(s, s, w / 2f, h / 2f); }
+                    else if (trans == 3) canvas.translate(0, h * (1f - xa));
                     drawPhoto(canvas, nxt, w, h, 0f, 0f, idx + 1, spec, xa);
+                    canvas.restore();
                 }
             } else {
                 drawCollage(canvas, w, h, spec, photos, tMs);
@@ -59,9 +65,9 @@ public final class TemplateEngine {
         long beatMs = Math.max(1, 60000L / spec.bpm);
         long nearest = Math.round(tMs / (double) beatMs) * beatMs;
         long dist = Math.abs(tMs - nearest);
-        float beatP = dist < 220 ? 1f - dist / 220f : 0f;
+        float beatP = dist < 260 ? 1f - dist / 260f : 0f;
         if ("zoompulse".equals(fxName)) {
-            float z = 1f + 0.04f * (float) Math.abs(Math.sin(tMs / 600.0));
+            float z = 1f + 0.07f * beatP;
             canvas.scale(z, z, w / 2f, h / 2f);
         } else {
             applyBeatFx(canvas, w, h, spec, beatP, fxName);
@@ -92,23 +98,7 @@ public final class TemplateEngine {
         if (a <= 0f) return;
 
         float margin = "rounded".equals(spec.frame) ? w * 0.06f : 0f;
-        float fw = w - margin * 2, fh = h - margin * 2;
-        float scaleBase = Math.max(fw / bmp.getWidth(), fh / bmp.getHeight());
-        float kb = 1.04f + 0.14f * p;
-        float dirX = (slot % 2 == 0) ? 1f : -1f;
-        float dirY = (slot % 3 == 0) ? -1f : 1f;
-        float drift = 0.03f * p;
-
-        Matrix m = new Matrix();
-        float s = scaleBase * kb;
-        m.setScale(s, s);
-        m.postTranslate(margin + (fw - bmp.getWidth() * s) / 2f + dirX * drift * fw,
-                margin + (fh - bmp.getHeight() * s) / 2f + dirY * drift * fh);
-
-        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
-        paint.setAlpha((int) (255 * a));
-        ColorMatrix cm = filterMatrix(filterOverride != null ? filterOverride : spec.filter);
-        if (cm != null) paint.setColorFilter(new ColorMatrixColorFilter(cm));
+        Paint paint = photoPaint(spec, (int) (255 * a));
 
         boolean polaroid = "polaroid".equals(spec.mask);
         boolean shaped = "circle".equals(spec.mask) || "heart".equals(spec.mask);
@@ -125,20 +115,15 @@ public final class TemplateEngine {
             canvas.drawRoundRect(new RectF(cx - card / 2f, cy - card / 2f, cx + card / 2f, cy + card / 2f + card * 0.14f), 10f, 10f, cardPaint);
             photoRect = new RectF(cx - card / 2f + card * 0.05f, cy - card / 2f + card * 0.05f, cx + card / 2f - card * 0.05f, cy + card / 2f - card * 0.05f);
         } else if (shaped) {
-            float d = Math.min(w, h) * 0.78f;
-            photoRect = new RectF(w / 2f - d / 2f, h / 2f - d / 2f, w / 2f + d / 2f, h / 2f + d / 2f);
+            float d = Math.min(w, h) * 0.8f;
+            float cy = h * 0.40f;
+            photoRect = new RectF(w / 2f - d / 2f, cy - d / 2f, w / 2f + d / 2f, cy + d / 2f);
         } else {
             photoRect = new RectF(margin, margin, w - margin, h - margin);
         }
-        float scale2 = Math.max(photoRect.width() / bmp.getWidth(), photoRect.height() / bmp.getHeight()) * (1.04f + 0.14f * p);
-        Matrix m2 = new Matrix();
-        m2.setScale(scale2, scale2);
-        float offY2 = photoRect.height() - bmp.getHeight() * scale2;
-        m2.postTranslate(photoRect.left + (photoRect.width() - bmp.getWidth() * scale2) / 2f + dirX * drift * photoRect.width(),
-                photoRect.top + (offY2 >= 0 ? offY2 / 2f : offY2 * 0.15f) + dirY * drift * photoRect.height());
         canvas.save();
         canvas.clipPath(maskPath(spec.mask, photoRect));
-        canvas.drawBitmap(bmp, m2, paint);
+        drawFitPhoto(canvas, bmp, photoRect, paint, p);
         canvas.restore();
         if (polaroid) {
             canvas.restore();
@@ -153,6 +138,48 @@ public final class TemplateEngine {
         }
     }
 
+    private static Paint photoPaint(TemplateSpec spec, int alpha) {
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+        paint.setAlpha(alpha);
+        ColorMatrix cm = filterMatrix(filterOverride != null ? filterOverride : spec.filter);
+        if (cm != null) paint.setColorFilter(new ColorMatrixColorFilter(cm));
+        return paint;
+    }
+
+    /** Blurred cover fill + sharp fit-inside photo: the whole photo always shows, nothing is cropped. */
+    private static void drawFitPhoto(Canvas canvas, Bitmap bmp, RectF r, Paint paint, float p) {
+        Bitmap blur = blurred(bmp);
+        float bs = Math.max(r.width() / blur.getWidth(), r.height() / blur.getHeight()) * (1.05f + 0.1f * p);
+        Matrix bm = new Matrix();
+        bm.setScale(bs, bs);
+        bm.postTranslate(r.left + (r.width() - blur.getWidth() * bs) / 2f,
+                r.top + (r.height() - blur.getHeight() * bs) / 2f);
+        Paint bp = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+        bp.setAlpha(235);
+        canvas.drawBitmap(blur, bm, bp);
+        Paint dim = new Paint();
+        dim.setColor(0x50000000);
+        canvas.drawRect(r, dim);
+        float fs = Math.min(r.width() / bmp.getWidth(), r.height() / bmp.getHeight()) * (0.96f + 0.04f * p);
+        Matrix fm = new Matrix();
+        fm.setScale(fs, fs);
+        fm.postTranslate(r.left + (r.width() - bmp.getWidth() * fs) / 2f,
+                r.top + (r.height() - bmp.getHeight() * fs) / 2f);
+        canvas.drawBitmap(bmp, fm, paint);
+    }
+
+    private static final android.util.LruCache<Integer, Bitmap> BLURS = new android.util.LruCache<Integer, Bitmap>(24);
+
+    private static Bitmap blurred(Bitmap src) {
+        int key = System.identityHashCode(src);
+        Bitmap b = BLURS.get(key);
+        if (b == null || b.isRecycled()) {
+            b = Bitmap.createScaledBitmap(src, Math.max(24, src.getWidth() / 14), Math.max(24, src.getHeight() / 14), true);
+            BLURS.put(key, b);
+        }
+        return b;
+    }
+
     private static void drawCollage(Canvas canvas, int w, int h, TemplateSpec spec, List<Bitmap> photos, long tMs) {
         int cols;
         int rows;
@@ -165,38 +192,45 @@ public final class TemplateEngine {
         float margin = w * 0.045f;
         float cw = (w - margin * 2 - gap * (cols - 1)) / cols;
         float ch = (h - margin * 2 - gap * (rows - 1)) / rows;
-        long cellMs = 2500;
+        long cellMs = Math.max(1200L, (60000L / Math.max(1, spec.bpm)) * 2);
         int base = (int) (tMs / cellMs);
-        float cellP = (tMs % cellMs) / (float) cellMs;
+        long cellT = tMs % cellMs;
+        float inP = Math.min(1f, cellT / 350f);
+        boolean canTransition = tMs >= cellMs && photos.size() > 1;
+        int trans = spec.variant % 4;
+        int borderStyle = spec.variant % 3;
         for (int i = 0; i < cells; i++) {
             int col = i % cols;
             int row = i / cols;
             float x = margin + col * (cw + gap);
             float y = margin + row * (ch + gap);
-            Bitmap bmp = photos.get((base + i) % photos.size());
-            float kb = 1.05f + 0.1f * cellP;
-            float s = Math.max(cw / bmp.getWidth(), ch / bmp.getHeight()) * kb;
-            float cellOffY = ch - bmp.getHeight() * s;
-            Matrix m = new Matrix();
-            m.setScale(s, s);
-            // Face-safe: when the photo overflows vertically, bias the crop toward the top
-            // (heads sit near the top of portrait photos) instead of center-cropping.
-            m.postTranslate(x + (cw - bmp.getWidth() * s) / 2f, y + (cellOffY >= 0 ? cellOffY / 2f : cellOffY * 0.15f));
-            Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
-            ColorMatrix cm = filterMatrix(filterOverride != null ? filterOverride : spec.filter);
-            if (cm != null) paint.setColorFilter(new ColorMatrixColorFilter(cm));
+            RectF cell = new RectF(x, y, x + cw, y + ch);
+            Bitmap cur = photos.get((base + i) % photos.size());
             canvas.save();
             Path clip = new Path();
-            clip.addRoundRect(new RectF(x, y, x + cw, y + ch), 28f, 28f, Path.Direction.CW);
+            clip.addRoundRect(cell, 28f, 28f, Path.Direction.CW);
             canvas.clipPath(clip);
-            canvas.drawBitmap(bmp, m, paint);
+            if (canTransition && inP < 1f) {
+                Bitmap prev = photos.get((base - 1 + i + photos.size()) % photos.size());
+                drawFitPhoto(canvas, prev, cell, photoPaint(spec, (int) (255 * (1f - inP))), 1f);
+                canvas.save();
+                if (trans == 1) canvas.translate(cw * (1f - inP), 0);
+                else if (trans == 2) { float s = 0.85f + 0.15f * inP; canvas.scale(s, s, cell.centerX(), cell.centerY()); }
+                else if (trans == 3) canvas.translate(0, ch * (1f - inP));
+                drawFitPhoto(canvas, cur, cell, photoPaint(spec, (int) (255 * inP)), cellT / (float) cellMs);
+                canvas.restore();
+            } else {
+                drawFitPhoto(canvas, cur, cell, photoPaint(spec, 255), cellT / (float) cellMs);
+            }
             canvas.restore();
-            Paint border = new Paint(Paint.ANTI_ALIAS_FLAG);
-            border.setStyle(Paint.Style.STROKE);
-            border.setStrokeWidth(5f);
-            border.setColor(Color.WHITE);
-            border.setAlpha(230);
-            canvas.drawRoundRect(new RectF(x, y, x + cw, y + ch), 28f, 28f, border);
+            if (borderStyle != 1) {
+                Paint border = new Paint(Paint.ANTI_ALIAS_FLAG);
+                border.setStyle(Paint.Style.STROKE);
+                border.setStrokeWidth(borderStyle == 2 ? 7f : 5f);
+                border.setColor(borderStyle == 2 ? spec.c1 : Color.WHITE);
+                border.setAlpha(230);
+                canvas.drawRoundRect(cell, 28f, 28f, border);
+            }
         }
     }
 
@@ -228,10 +262,10 @@ public final class TemplateEngine {
             p.setAlpha((int) (140 * beatP));
             canvas.drawRect(0, 0, w, h, p);
         } else if ("punch".equals(fxName)) {
-            float z = 1f + 0.03f * beatP;
+            float z = 1f + 0.05f * beatP;
             canvas.scale(z, z, w / 2f, h / 2f);
         } else if ("shake".equals(fxName)) {
-            float d = 10f * beatP;
+            float d = 14f * beatP;
             canvas.translate(((t2(w) % 2) == 0 ? d : -d), 0);
         } else if ("glitch".equals(fxName)) {
             Paint p = new Paint();
@@ -248,37 +282,42 @@ public final class TemplateEngine {
     private static void drawOverlay(Canvas canvas, int w, int h, TemplateSpec spec, long tMs) {
         Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         if ("hearts".equals(spec.overlay)) {
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < 9; i++) {
                 float seed = (i * 0.37f) % 1f;
-                float x = w * (0.1f + 0.8f * seed);
-                float span = 6000f;
+                float x = w * (0.08f + 0.84f * seed);
+                float span = 5200f;
                 float ph = ((tMs + i * 977) % (long) span) / span;
-                float y = h * (1.1f - 1.3f * ph);
-                float size = w * (0.04f + 0.03f * ((i * 0.7f) % 1f));
+                float y = h * (1.1f - 1.35f * ph);
+                float size = w * (0.06f + 0.05f * ((i * 0.7f) % 1f)) * (0.9f + 0.2f * (float) Math.sin(tMs / 350.0 + i));
                 p.setColor(0xFFFF4081);
-                p.setAlpha(160);
+                p.setAlpha(150);
                 drawHeart(canvas, p, x, y, size);
             }
         } else if ("sparkles".equals(spec.overlay)) {
             p.setColor(Color.WHITE);
-            for (int i = 0; i < 14; i++) {
+            for (int i = 0; i < 20; i++) {
                 float sx = ((i * 0.618f) % 1f) * w;
                 float sy = ((i * 0.382f + 0.13f) % 1f) * h;
-                float tw = (float) Math.abs(Math.sin((tMs / 300.0) + i * 1.7));
+                float tw = (float) Math.abs(Math.sin((tMs / 260.0) + i * 1.7));
                 p.setAlpha((int) (60 + 190 * tw));
-                float r = 3f + 6f * tw;
+                float r = 5f + 10f * tw;
                 canvas.drawCircle(sx, sy, r, p);
+                p.setAlpha((int) (40 + 120 * tw));
+                canvas.drawCircle(sx, sy, r * 2.1f, p);
             }
         } else if ("confetti".equals(spec.overlay)) {
             int[] cols = {0xFFFF4081, 0xFFFFD740, 0xFF00E676, 0xFF40C4FF, 0xFFE040FB};
-            float span = 4000f;
-            for (int i = 0; i < 18; i++) {
+            float span = 3600f;
+            for (int i = 0; i < 26; i++) {
                 float ph = ((tMs * 1f + i * 311) % (long) span) / span;
                 float x = (((i * 0.47f) % 1f) + 0.1f * (float) Math.sin(ph * 6.28 + i)) * w;
                 float y = h * ph;
                 p.setColor(cols[i % cols.length]);
                 p.setAlpha(220);
-                canvas.drawRect(x, y, x + 12, y + 20, p);
+                canvas.save();
+                canvas.rotate(ph * 360f + i * 40f, x + 9, y + 14);
+                canvas.drawRect(x, y, x + 18, y + 28, p);
+                canvas.restore();
             }
         } else if ("leak".equals(spec.overlay)) {
             float ph = (tMs % 5000L) / 5000f;
@@ -318,9 +357,38 @@ public final class TemplateEngine {
         p.setAlpha((int) (255 * pop));
         p.setTextAlign(Paint.Align.CENTER);
         p.setShadowLayer(8f, 0f, 3f, 0x80000000);
-        // Text stays in the lower half, below the face zone (top-biased crops put faces high).
-        float y = h * (idx % 2 == 0 ? 0.84f : 0.66f);
+        boolean collage = !"full".equals(spec.layout);
+        int textStyle = (spec.variant / 4) % 3;
+        float y;
+        if (textStyle == 1) {
+            y = h * 0.10f;
+        } else if (collage) {
+            y = h * (idx % 2 == 0 ? 0.90f : 0.955f);
+        } else {
+            y = h * (idx % 2 == 0 ? 0.84f : 0.90f);
+        }
+        if (textStyle == 1) {
+            p.setTextSize(w * 0.055f * scale);
+            p.setTextAlign(Paint.Align.LEFT);
+            Paint bar = new Paint(Paint.ANTI_ALIAS_FLAG);
+            bar.setColor(spec.c1);
+            bar.setAlpha((int) (220 * pop));
+            canvas.drawRoundRect(new RectF(w * 0.05f, y - p.getTextSize() * 0.9f, w * 0.05f + 10f, y + p.getTextSize() * 0.4f), 5f, 5f, bar);
+            canvas.drawText(line, w * 0.05f + 26f, y, p);
+            return;
+        }
+        p.setTextSize(w * (collage ? 0.07f : 0.09f) * scale);
         float tw = p.measureText(line);
+        if (textStyle == 2) {
+            Paint stroke = new Paint(p);
+            stroke.setStyle(Paint.Style.STROKE);
+            stroke.setStrokeWidth(6f);
+            stroke.setColor(spec.c2);
+            stroke.setAlpha((int) (255 * pop));
+            canvas.drawText(line, w / 2f, y, stroke);
+            canvas.drawText(line, w / 2f, y, p);
+            return;
+        }
         Paint pill = new Paint(Paint.ANTI_ALIAS_FLAG);
         pill.setColor(Color.BLACK);
         pill.setAlpha((int) (70 * pop));
