@@ -188,22 +188,27 @@ public class FullFlowQaTest {
         Thread.sleep(2500);
         shot(stage + "_picker");
 
-        // DocumentsUI's Recent view can take a while to index freshly-seeded media:
-        // poll for the items, and if they never show, switch to the Images root.
+        // DocumentsUI's Recent view can take a while to index freshly-seeded media,
+        // and the grid re-renders while indexing: wait for a STABLE item count that
+        // covers the need, otherwise switch to the Images root.
         boolean triedImagesRoot = false;
-        long deadline = System.currentTimeMillis() + 60000;
+        long deadline = System.currentTimeMillis() + 75000;
+        int lastCount = -1;
+        long lastChangeAt = System.currentTimeMillis();
         while (System.currentTimeMillis() < deadline) {
-            List<UiObject2> icons = findPhotoIcons();
-            if (icons.size() >= n) break;
-            if (!triedImagesRoot && System.currentTimeMillis() > deadline - 45000) {
+            int c = findPhotoIcons().size();
+            if (c != lastCount) { lastCount = c; lastChangeAt = System.currentTimeMillis(); }
+            if (c >= Math.max(n, 4) && System.currentTimeMillis() - lastChangeAt > 4000) break;
+            if (!triedImagesRoot && System.currentTimeMillis() > deadline - 50000) {
                 triedImagesRoot = true;
                 clickIfExists(By.desc("Show roots"), 1500);
                 Thread.sleep(1200);
                 clickIfExists(By.text("Images"), 2500);
                 Thread.sleep(1500);
             }
-            Thread.sleep(2500);
+            Thread.sleep(2000);
         }
+        Thread.sleep(1500);
         List<UiObject2> icons = findPhotoIcons();
         if (icons.size() < n) {
             shot(stage + "_picker_items");
@@ -313,10 +318,19 @@ public class FullFlowQaTest {
         shot(specId + "_make");
         assertNoCrash(specId + "_make2", crashBefore);
 
-        // export
+        // export; poll so an app crash fails fast with evidence instead of an 8-min wait
         clickIfExists(By.text("Export"), 3000);
         log(specId + ": export started, waiting");
-        boolean done = device.wait(Until.hasObject(By.text("Share")), EXPORT_WAIT_MS) != null;
+        boolean done = false;
+        long exportDeadline = System.currentTimeMillis() + EXPORT_WAIT_MS;
+        while (System.currentTimeMillis() < exportDeadline) {
+            if (device.findObject(By.text("Share")) != null) { done = true; break; }
+            if (!crashLogContent().equals(crashBefore)) {
+                shot(specId + "_export_CRASH");
+                fail("app crashed during export of " + specId + ":\n" + crashLogContent());
+            }
+            Thread.sleep(5000);
+        }
         assertNoCrash(specId + "_export", crashBefore);
         if (!done) {
             shot(specId + "_export_timeout");

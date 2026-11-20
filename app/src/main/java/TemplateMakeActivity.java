@@ -190,8 +190,10 @@ public final class TemplateMakeActivity extends AppCompatActivity {
         pd.show();
 
         final String musicUri = track == null ? null : Music.INSTANCE.uri(this, track.getFile()).toString();
+        // captionLang must be non-null: Project.<init> has an Intrinsics null check
+        // (decompiled Kotlin) and export crashed with NPE on every template export.
         final Project project = new Project(projectId, spec.title, clips, new ArrayList<Caption>(),
-                "reels", null, musicUri, 0.35f, spec.filter, spec.id, System.currentTimeMillis());
+                "reels", "hinglish", musicUri, 0.35f, spec.filter, spec.id, System.currentTimeMillis());
         final Composition composition;
         try {
             composition = Exporter.INSTANCE.buildTemplateComposition(this, project, spec);
