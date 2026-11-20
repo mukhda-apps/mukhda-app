@@ -182,6 +182,14 @@ public final class TemplateMakeActivity extends AppCompatActivity {
         }
     }
 
+    private static boolean isSoftwareEmulator() {
+        String h = (android.os.Build.HARDWARE + "").toLowerCase();
+        String f = (android.os.Build.FINGERPRINT + "").toLowerCase();
+        String m = (android.os.Build.MODEL + "").toLowerCase();
+        return h.contains("ranchu") || h.contains("goldfish") || f.contains("generic")
+                || f.contains("emulator") || m.contains("sdk") || m.contains("emulator");
+    }
+
     private void writeExportError(Throwable t) {
         try {
             File f = new File(getFilesDir(), "export_error.txt");
@@ -204,9 +212,15 @@ public final class TemplateMakeActivity extends AppCompatActivity {
         // (decompiled Kotlin) and export crashed with NPE on every template export.
         final Project project = new Project(projectId, spec.title, clips, new ArrayList<Caption>(),
                 "reels", "hinglish", musicUri, 0.35f, spec.filter, spec.id, System.currentTimeMillis());
+        // Software-GL emulators (swiftshader) cannot encode 1080p30 in any sane time;
+        // drop to 360p15 there only. Real devices always get the full 1080p30 export.
+        final boolean softRenderer = isSoftwareEmulator();
+        android.util.Log.i("MukhdaExport", "export starting, softRenderer=" + softRenderer);
         final Composition composition;
         try {
-            composition = Exporter.INSTANCE.buildTemplateComposition(this, project, spec);
+            composition = softRenderer
+                    ? Exporter.INSTANCE.buildTemplateComposition(this, project, spec, 360, 640, spec.durationMs(), 15)
+                    : Exporter.INSTANCE.buildTemplateComposition(this, project, spec);
         } catch (Throwable t) {
             android.util.Log.e("MukhdaExport", "composition setup failed", t);
             writeExportError(t);
@@ -216,7 +230,7 @@ public final class TemplateMakeActivity extends AppCompatActivity {
         }
         final File out = new File(getFilesDir(), "exports/mukhda_" + spec.id + "_" + System.currentTimeMillis() + ".mp4");
         out.getParentFile().mkdirs();
-        final ExportOptions options = new ExportOptions(Presets.INSTANCE.getAll().get(0), 1080, "9:16", true, false);
+        final ExportOptions options = new ExportOptions(Presets.INSTANCE.getAll().get(0), softRenderer ? 360 : 1080, "9:16", true, false);
 
         final CountDownLatch done = new CountDownLatch(1);
         final Throwable[] err = new Throwable[1];
@@ -247,7 +261,7 @@ public final class TemplateMakeActivity extends AppCompatActivity {
         });
         new Thread(() -> {
             boolean ok = false;
-            try { ok = done.await(10, TimeUnit.MINUTES); } catch (InterruptedException ignored) {}
+            try { ok = done.await(30, TimeUnit.MINUTES); } catch (InterruptedException ignored) {}
             final boolean finished = ok;
             if (!finished) {
                 android.util.Log.e("MukhdaExport", "export timed out after 10 min");
