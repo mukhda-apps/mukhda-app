@@ -82,7 +82,7 @@ jobs:
             # Release smoke: install the ACTUAL published APK (same bits she gets) and launch it
             mkdir -p artifacts/release-smoke
             adb uninstall com.mukhda.video || true
-            curl -sL -o /tmp/mukhda-release.apk https://github.com/mukhda-apps/mukhda-app/releases/download/v1.3.4/mukhda-1.3.4.apk
+            curl -sL -o /tmp/mukhda-release.apk https://github.com/mukhda-apps/mukhda-app/releases/download/v1.3.5/mukhda-1.3.5.apk
             ls -la /tmp/mukhda-release.apk
             adb install /tmp/mukhda-release.apk || true
             adb logcat -c || true
