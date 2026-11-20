@@ -1029,6 +1029,7 @@ public final class MainActivity extends AppCompatActivity {
         frameLayout.setClipToOutline(true);
         frameLayout.setOutlineProvider(ViewOutlineProvider.BACKGROUND);
         TemplateView pv = new TemplateView(mainActivity);
+        pv.showText = false;
         pv.setTemplate(sp, SamplePhotos.get(Math.max(sp.photoCount, 1)));
         pv.play();
         frameLayout.addView(pv, new FrameLayout.LayoutParams(UiKt.getMATCH(), UiKt.dp(mainActivity, 250)));

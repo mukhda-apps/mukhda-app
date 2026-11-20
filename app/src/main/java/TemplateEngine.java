@@ -24,6 +24,11 @@ public final class TemplateEngine {
     private TemplateEngine() {}
 
     public static void drawFrame(Canvas canvas, int w, int h, TemplateSpec spec, List<Bitmap> photos, long tMs) {
+        drawFrame(canvas, w, h, spec, photos, tMs, false);
+    }
+
+    /** thumb=true skips the animated captions (gallery cards have their own labels). */
+    public static void drawFrame(Canvas canvas, int w, int h, TemplateSpec spec, List<Bitmap> photos, long tMs, boolean thumb) {
         if (canvas == null || spec == null) return;
         long dur = spec.durationMs();
         if (tMs < 0) tMs = 0;
@@ -85,7 +90,7 @@ public final class TemplateEngine {
         }
 
         drawOverlay(canvas, w, h, spec, tMs);
-        drawTexts(canvas, w, h, spec, tMs);
+        if (!thumb) drawTexts(canvas, w, h, spec, tMs);
         drawVignette(canvas, w, h);
         drawWatermark(canvas, w, h);
     }
@@ -279,6 +284,14 @@ public final class TemplateEngine {
 
     private static int t2(int w) { return w % 2; }
 
+    /** Keep particles out of the central face band: push them to the side lanes. */
+    private static float edgeX(float x, float y, int w, int h) {
+        if (y > h * 0.18f && y < h * 0.62f && x > w * 0.26f && x < w * 0.74f) {
+            return x < w / 2f ? w * (0.06f + 0.1f * ((x / w) % 1f)) : w * (0.94f - 0.1f * ((x / w) % 1f));
+        }
+        return x;
+    }
+
     private static void drawOverlay(Canvas canvas, int w, int h, TemplateSpec spec, long tMs) {
         Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         if ("hearts".equals(spec.overlay)) {
@@ -291,7 +304,7 @@ public final class TemplateEngine {
                 float size = w * (0.06f + 0.05f * ((i * 0.7f) % 1f)) * (0.9f + 0.2f * (float) Math.sin(tMs / 350.0 + i));
                 p.setColor(0xFFFF4081);
                 p.setAlpha(150);
-                drawHeart(canvas, p, x, y, size);
+                drawHeart(canvas, p, edgeX(x, y, w, h), y, size);
             }
         } else if ("sparkles".equals(spec.overlay)) {
             p.setColor(Color.WHITE);
@@ -301,9 +314,10 @@ public final class TemplateEngine {
                 float tw = (float) Math.abs(Math.sin((tMs / 260.0) + i * 1.7));
                 p.setAlpha((int) (60 + 190 * tw));
                 float r = 5f + 10f * tw;
-                canvas.drawCircle(sx, sy, r, p);
+                float ex = edgeX(sx, sy, w, h);
+                canvas.drawCircle(ex, sy, r, p);
                 p.setAlpha((int) (40 + 120 * tw));
-                canvas.drawCircle(sx, sy, r * 2.1f, p);
+                canvas.drawCircle(ex, sy, r * 2.1f, p);
             }
         } else if ("confetti".equals(spec.overlay)) {
             int[] cols = {0xFFFF4081, 0xFFFFD740, 0xFF00E676, 0xFF40C4FF, 0xFFE040FB};
@@ -312,11 +326,12 @@ public final class TemplateEngine {
                 float ph = ((tMs * 1f + i * 311) % (long) span) / span;
                 float x = (((i * 0.47f) % 1f) + 0.1f * (float) Math.sin(ph * 6.28 + i)) * w;
                 float y = h * ph;
+                float ex = edgeX(x, y, w, h);
                 p.setColor(cols[i % cols.length]);
                 p.setAlpha(220);
                 canvas.save();
-                canvas.rotate(ph * 360f + i * 40f, x + 9, y + 14);
-                canvas.drawRect(x, y, x + 18, y + 28, p);
+                canvas.rotate(ph * 360f + i * 40f, ex + 9, y + 14);
+                canvas.drawRect(ex, y, ex + 18, y + 28, p);
                 canvas.restore();
             }
         } else if ("leak".equals(spec.overlay)) {

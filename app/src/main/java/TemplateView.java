@@ -27,6 +27,8 @@ public final class TemplateView extends View {
         super(ctx);
     }
 
+    public boolean showText = true;
+
     public void setTemplate(TemplateSpec spec, List<Bitmap> photos) {
         this.spec = spec;
         this.photos = photos;
@@ -66,7 +68,7 @@ public final class TemplateView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         if (spec == null) return;
-        TemplateEngine.drawFrame(canvas, getWidth(), getHeight(), spec, photos, currentT());
+        TemplateEngine.drawFrame(canvas, getWidth(), getHeight(), spec, photos, currentT(), !showText);
     }
 
     @Override
