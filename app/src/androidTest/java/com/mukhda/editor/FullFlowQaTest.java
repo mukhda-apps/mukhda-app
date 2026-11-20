@@ -188,24 +188,43 @@ public class FullFlowQaTest {
         Thread.sleep(2500);
         shot(stage + "_picker");
 
-        List<UiObject2> icons = findPhotoIcons();
-        if (icons.size() < n) {
-            // maybe Recent is empty: open the Images root via the drawer
-            clickIfExists(By.desc("Show roots"), 1500);
-            Thread.sleep(800);
-            clickIfExists(By.text("Images"), 2000);
-            device.wait(Until.hasObject(By.res(DOCSUI, "icon")), 5000);
-            Thread.sleep(1000);
-            icons = findPhotoIcons();
+        // DocumentsUI's Recent view can take a while to index freshly-seeded media:
+        // poll for the items, and if they never show, switch to the Images root.
+        boolean triedImagesRoot = false;
+        long deadline = System.currentTimeMillis() + 60000;
+        while (System.currentTimeMillis() < deadline) {
+            List<UiObject2> icons = findPhotoIcons();
+            if (icons.size() >= n) break;
+            if (!triedImagesRoot && System.currentTimeMillis() > deadline - 45000) {
+                triedImagesRoot = true;
+                clickIfExists(By.desc("Show roots"), 1500);
+                Thread.sleep(1200);
+                clickIfExists(By.text("Images"), 2500);
+                Thread.sleep(1500);
+            }
+            Thread.sleep(2500);
         }
+        List<UiObject2> icons = findPhotoIcons();
         if (icons.size() < n) {
             shot(stage + "_picker_items");
             dump(stage + "_picker_items");
             fail("picker shows only " + icons.size() + " selectable items, need " + n + " at " + stage);
         }
+        // Re-query before every click: the grid re-renders on each selection and
+        // stale UiObject2 references throw StaleObjectException.
         for (int i = 0; i < n; i++) {
-            icons.get(i).click();
-            Thread.sleep(350);
+            List<UiObject2> fresh = findPhotoIcons();
+            if (fresh.size() < n) {
+                Thread.sleep(2000);
+                fresh = findPhotoIcons();
+            }
+            if (fresh.size() <= i) {
+                shot(stage + "_select_reattach");
+                dump(stage + "_select_reattach");
+                fail("lost picker items while selecting (" + fresh.size() + " left) at " + stage);
+            }
+            fresh.get(i).click();
+            Thread.sleep(450);
         }
         shot(stage + "_picked");
         boolean confirmed = clickIfExists(By.text("Select"), 3000);
@@ -221,7 +240,14 @@ public class FullFlowQaTest {
     private static List<UiObject2> findPhotoIcons() {
         List<UiObject2> l = device.findObjects(By.res(DOCSUI, "icon"));
         if (l == null || l.isEmpty()) {
-            l = device.findObjects(By.pkg(DOCSUI).clazz("android.widget.ImageView"));
+            // fallback: content-area image views only (never toolbar buttons)
+            List<UiObject2> all = device.findObjects(By.pkg(DOCSUI).clazz("android.widget.ImageView"));
+            l = new java.util.ArrayList<>();
+            int screenH = device.getDisplayHeight();
+            for (UiObject2 o : all) {
+                android.graphics.Rect b = o.getVisibleBounds();
+                if (b != null && b.top > screenH / 6 && b.width() > 100) l.add(o);
+            }
         }
         return l;
     }
