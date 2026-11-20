@@ -110,8 +110,18 @@ public final class Project {
         this.updatedAt = j;
     }
 
-    public Project(java.lang.String r14, java.lang.String r15, java.util.List r16, java.util.List r17, java.lang.String r18, java.lang.String r19, java.lang.String r20, float r21, java.lang.String r22, java.lang.String r23, long r24, int r26, kotlin.jvm.internal.DefaultConstructorMarker r27) {
-        throw new UnsupportedOperationException("Method not decompiled: com.mukhda.editor.Project.<init>(java.lang.String, java.lang.String, java.util.List, java.util.List, java.lang.String, java.lang.String, java.lang.String, float, java.lang.String, java.lang.String, long, int, kotlin.jvm.internal.DefaultConstructorMarker):void");
+    public Project(java.lang.String id, java.lang.String name, java.util.List clips, java.util.List captions, java.lang.String captionStyle, java.lang.String captionLang, java.lang.String musicUri, float originalVolume, java.lang.String filter, java.lang.String templateId, long updatedAt, int mask, kotlin.jvm.internal.DefaultConstructorMarker marker) {
+        this((mask & 1) != 0 ? java.util.UUID.randomUUID().toString() : id,
+                (mask & 2) != 0 ? "Untitled" : name,
+                (mask & 4) != 0 ? new java.util.ArrayList<Clip>() : clips,
+                (mask & 8) != 0 ? new java.util.ArrayList<Caption>() : captions,
+                (mask & 16) != 0 ? "reels" : captionStyle,
+                (mask & 32) != 0 ? "hinglish" : captionLang,
+                (mask & 64) != 0 ? null : musicUri,
+                (mask & 128) != 0 ? 1f : originalVolume,
+                (mask & 256) != 0 ? "none" : filter,
+                (mask & 512) != 0 ? null : templateId,
+                (mask & 1024) != 0 ? System.currentTimeMillis() : updatedAt);
     }
 
     public final String getId() {

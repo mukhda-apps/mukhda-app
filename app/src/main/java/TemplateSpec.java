@@ -96,7 +96,7 @@ public final class TemplateSpec {
         a("New", "Face Swap", "new_faceduo", "Face Duo Swap", "desi_trap", 2, 12, "cool", "leak", "glitch", null, "rounded", 0xFF00BCD4, 0xFF1A237E, "SWAP STYLE|Double Fun", true);
         a("New", "Mirror Trend", "new_mirror2", "Mirror Trend", "reels_pop", 4, 15, "aqua", "sparkles", "shine", "grid4", "rounded", 0xFF11998E, 0xFF38EF7D, "MIRROR ME|Trend Alert", true);
         a("New", "Mirror Trend", "new_mirrorx", "Mirror Magic", "edm_drop", 4, 12, "vivid", "leak", "flash", "grid4", "rounded", 0xFF373B44, 0xFF4286F4, "MIRROR MAGIC", true);
-        a("New", "Cute Emoji", "new_emoji1", "Cute Emoji Love", "reels_pop", 1, 12, "rose", "hearts", "zoompulse", "full", "heart", 0xFFF857A6, 0xFFFF5858, "SO CUTE|Smile Please", true);
+        a("New", "Cute Emoji", "new_emoji1", "Cute Emoji Love", "reels_pop", 1, 12, "rose", "hearts", "zoompulse", "full", "circle", 0xFFF857A6, 0xFFFF5858, "SO CUTE|Smile Please", true);
         a("New", "Cute Emoji", "new_emoji2", "Emoji Fun", "bollywood_dance", 2, 12, "vivid", "confetti", "punch", null, "rounded", 0xFFFC4A1A, 0xFFF7B733, "EMOJI FUN|Hasti Raho", true);
         a("New", "", "new_viral", "Viral Reel", "reels_pop", 4, 15, "vivid", "leak", "punch", null, "rounded", 0xFFFF5F6D, 0xFFFFC371, "VIRAL|Trending Reel", true);
         a("New", "", "new_fresh", "Fresh Beat", "desi_trap", 6, 15, "cool", "sparkles", "shake", null, "rounded", 0xFF0F2027, 0xFF2C5364, "FRESH|New Drop", false);
@@ -104,8 +104,8 @@ public final class TemplateSpec {
         a("Love", "Your Name", "love_names", "Naam Wala Love", "hindi_romance", 2, 15, "rose", "hearts", "zoompulse", null, "rounded", 0xFFEC407A, 0xFF7B1FA2, "A + P|Forever", true);
         a("Love", "Your Name", "love_initials", "Love Initials", "romantic_piano", 2, 15, "rose", "hearts", "shine", null, "rounded", 0xFFF06292, 0xFF4A148C, "P <3 R|Made For Each Other", false);
         a("Love", "Your Name", "love_couplename", "Couple Naam", "hindi_romance", 4, 20, "warm", "hearts", "zoompulse", null, "rounded", 0xFFD81B60, 0xFF5E35B1, "Tera Naam|Mera Naam", false);
-        a("Love", "Single Pic", "love_single", "Ek Photo Pyar", "romantic_piano", 1, 15, "rose", "hearts", "shine", "full", "heart", 0xFFEC407A, 0xFF880E4F, "Only You|Meri Jaan", true);
-        a("Love", "Single Pic", "love_heart1", "Dil Frame", "hindi_romance", 1, 12, "rose", "hearts", "zoompulse", "full", "heart", 0xFFF06292, 0xFF6A1B9A, "Dil Se|Sirf Tum", false);
+        a("Love", "Single Pic", "love_single", "Ek Photo Pyar", "romantic_piano", 1, 15, "rose", "hearts", "shine", "full", "circle", 0xFFEC407A, 0xFF880E4F, "Only You|Meri Jaan", true);
+        a("Love", "Single Pic", "love_heart1", "Dil Frame", "hindi_romance", 1, 12, "rose", "hearts", "zoompulse", "full", "circle", 0xFFF06292, 0xFF6A1B9A, "Dil Se|Sirf Tum", false);
         a("Love", "Single Pic", "love_circle", "Circle of Love", "romantic_piano", 1, 15, "warm", "sparkles", "shine", "full", "circle", 0xFFFF8A80, 0xFF4A148C, "You & Me|Hamesha", false);
         a("Love", "", "dil_se", "Dil Se Love", "hindi_romance", 4, 20, "rose", "hearts", "zoompulse", null, "rounded", 0xFFEC407A, 0xFF7B1FA2, "Dil Se|Love Forever", true);
         a("Love", "", "love_story", "Love Story", "romantic_piano", 6, 24, "rose", "hearts", "shine", null, "rounded", 0xFFF06292, 0xFF4A148C, "Love Story|You & Me", true);
@@ -114,7 +114,7 @@ public final class TemplateSpec {
         // ---------- Birthday ----------
         a("Birthday", "Single Pic", "bday_single", "Birthday Star", "party_anthem", 1, 12, "vivid", "confetti", "punch", "full", "circle", 0xFFFF4081, 0xFFFFD740, "Happy Birthday|Party Time", true);
         a("Birthday", "Single Pic", "bday_hero", "Bday Hero", "bollywood_dance", 1, 12, "warm", "confetti", "zoompulse", "full", "rounded", 0xFFFC4A1A, 0xFFF7B733, "Janamdin Mubarak|Hero No.1", false);
-        a("Birthday", "Single Pic", "bday_queen", "Birthday Queen", "reels_pop", 1, 15, "rose", "confetti", "shine", "full", "heart", 0xFFF857A6, 0xFFFF5858, "Birthday Queen|Shine On", false);
+        a("Birthday", "Single Pic", "bday_queen", "Birthday Queen", "reels_pop", 1, 15, "rose", "confetti", "shine", "full", "circle", 0xFFF857A6, 0xFFFF5858, "Birthday Queen|Shine On", false);
         a("Birthday", "", "birthday", "Happy Birthday", "party_anthem", 4, 15, "vivid", "confetti", "punch", null, "rounded", 0xFFFF4081, 0xFFFFD740, "Happy Birthday|Party Time", true);
         a("Birthday", "", "bday_cake", "Cake Cutting", "bollywood_dance", 4, 15, "warm", "confetti", "punch", null, "rounded", 0xFFFF6F00, 0xFFE91E63, "Cake Time|Make A Wish", true);
         a("Birthday", "", "bday_balloon", "Balloon Party", "party_anthem", 6, 20, "vivid", "confetti", "shake", null, "rounded", 0xFF00BCD4, 0xFF7B1FA2, "Balloon Party|Celebrate", false);
@@ -123,7 +123,7 @@ public final class TemplateSpec {
         // ---------- Anniversary ----------
         a("Anniversary", "", "anniversary", "Anniversary Gold", "romantic_piano", 4, 20, "warm", "hearts", "shine", "full", "polaroid", 0xFFD4A017, 0xFF5D4037, "Happy Anniversary|Forever Together", true);
         a("Anniversary", "", "anni_rose", "Rose Anniversary", "hindi_romance", 2, 15, "rose", "hearts", "zoompulse", null, "rounded", 0xFFAD1457, 0xFF4A148C, "Saalgirah Mubarak|You & Me", false);
-        a("Anniversary", "", "anni_heart", "Heart Anniversary", "romantic_piano", 1, 15, "rose", "hearts", "shine", "full", "heart", 0xFFEC407A, 0xFF880E4F, "Anniversary|Dil Se Dil Tak", true);
+        a("Anniversary", "", "anni_heart", "Heart Anniversary", "romantic_piano", 1, 15, "rose", "hearts", "shine", "full", "circle", 0xFFEC407A, 0xFF880E4F, "Anniversary|Dil Se Dil Tak", true);
         a("Anniversary", "", "anni_journey", "Humdum Journey", "shaadi_sur", 6, 25, "warm", "sparkles", "zoompulse", null, "rounded", 0xFFD4A017, 0xFF3E2723, "Humdum|Sath Sath", false);
         a("Anniversary", "", "anni_couple", "Couple Goals", "hindi_romance", 4, 20, "sunset", "hearts", "shine", null, "rounded", 0xFFFF7043, 0xFF880E4F, "Couple Goals|Anniversary", false);
         a("Anniversary", "", "anni_years", "Years of Love", "romantic_piano", 10, 30, "warm", "hearts", "zoompulse", null, "rounded", 0xFF8D6E63, 0xFF311B92, "Years of Love|Many More", false);
@@ -152,7 +152,7 @@ public final class TemplateSpec {
         // ---------- Family ----------
         a("Family", "Brother Sister", "fam_brosis1", "Bhai Behen", "shaadi_sur", 2, 15, "warm", "hearts", "zoompulse", null, "rounded", 0xFFFFB74D, 0xFF6A1B9A, "Bhai Behen|Rishta Pakka", true);
         a("Family", "Brother Sister", "fam_brosis2", "Sibling Love", "retro_90s", 4, 15, "vivid", "sparkles", "punch", null, "rounded", 0xFFFF5F6D, 0xFF8E2DE2, "Sibling Love|Tom & Jerry", false);
-        a("Family", "Baby", "fam_baby1", "Cute Baby", "lofi_chill", 1, 12, "rose", "hearts", "zoompulse", "full", "heart", 0xFFF8BBD0, 0xFF7B1FA2, "Cute Baby|Nanha Mehmaan", true);
+        a("Family", "Baby", "fam_baby1", "Cute Baby", "lofi_chill", 1, 12, "rose", "hearts", "zoompulse", "full", "circle", 0xFFF8BBD0, 0xFF7B1FA2, "Cute Baby|Nanha Mehmaan", true);
         a("Family", "Baby", "fam_baby2", "Baby Smiles", "reels_pop", 4, 15, "warm", "hearts", "punch", null, "rounded", 0xFFFFCC80, 0xFFAD1457, "Baby Smiles|Gudda Guddi", false);
         a("Family", "Mom", "fam_mom1", "Maa", "sad_acoustic", 1, 15, "warm", "hearts", "shine", "full", "circle", 0xFFFFB74D, 0xFF880E4F, "MAA|Duniya Meri", true);
         a("Family", "Mom", "fam_mom2", "Meri Maa", "bhajan_sur", 4, 20, "warm", "sparkles", "zoompulse", null, "rounded", 0xFFD4A017, 0xFF5D4037, "Meri Maa|Pyar Bhara", false);
@@ -168,7 +168,7 @@ public final class TemplateSpec {
         a("YoungSwag", "Baby Showtime", "ys_show1", "Baby Showtime", "reels_pop", 4, 15, "cool", "sparkles", "zoompulse", null, "rounded", 0xFF373B44, 0xFF4286F4, "SHOWTIME|Little Star", false);
         a("YoungSwag", "Baby Showtime", "ys_show2", "Swag Kid", "punjabi_swag", 6, 15, "vivid", "leak", "shake", null, "rounded", 0xFF0F2027, 0xFF2C5364, "SWAG KID|Attitude Full", false);
         a("YoungSwag", "Baby Dance", "ys_dance3", "Baby Beat Drop", "edm_drop", 2, 12, "cool", "confetti", "flash", null, "rounded", 0xFF00BCD4, 0xFF1A237E, "BEAT DROP|Baby Style", false);
-        a("YoungSwag", "Baby Showtime", "ys_show3", "Stage Star Baby", "party_anthem", 1, 12, "rose", "confetti", "zoompulse", "full", "heart", 0xFFF857A6, 0xFFFF5858, "STAGE STAR|Baby Showtime", false);
+        a("YoungSwag", "Baby Showtime", "ys_show3", "Stage Star Baby", "party_anthem", 1, 12, "rose", "confetti", "zoompulse", "full", "circle", 0xFFF857A6, 0xFFFF5858, "STAGE STAR|Baby Showtime", false);
         // ---------- Bhojpuri ----------
         a("Bhojpuri", "", "bhoj_swag", "Bhojpuri Swag", "dhol_dhamaka", 2, 12, "vivid", "leak", "punch", null, "rounded", 0xFFFF6F00, 0xFF880E4F, "BHOJPURI SWAG|Jila Top", true);
         a("Bhojpuri", "", "bhoj_dance", "Lollypop Dance", "desi_trap", 4, 15, "vivid", "confetti", "shake", null, "rounded", 0xFF00E676, 0xFF1A237E, "Dance Dhamaka|Bhojpuri Style", false);
@@ -191,7 +191,7 @@ public final class TemplateSpec {
         a("AI Magic", "AI Baby", "ai_baby1", "AI Baby Look", "reels_pop", 1, 12, "vivid", "sparkles", "zoompulse", "full", "circle", 0xFF8E2DE2, 0xFF00BCD4, "AI BABY|Magic Look", true);
         a("AI Magic", "AI Baby", "ai_baby2", "Baby Magic", "lofi_chill", 2, 12, "aqua", "hearts", "shine", null, "rounded", 0xFF11998E, 0xFF38EF7D, "Baby Magic|AI Style", false);
         a("AI Magic", "AI Baby", "ai_baby3", "Little AI Star", "bollywood_dance", 4, 15, "vivid", "confetti", "punch", null, "rounded", 0xFFF857A6, 0xFFFF5858, "Little Star|AI Touch", false);
-        a("AI Magic", "Magic Face", "ai_face1", "Magic Face", "edm_drop", 1, 12, "cool", "leak", "glitch", "full", "heart", 0xFF7B1FA2, 0xFF311B92, "MAGIC FACE|Wow Look", true);
+        a("AI Magic", "Magic Face", "ai_face1", "Magic Face", "edm_drop", 1, 12, "cool", "leak", "glitch", "full", "circle", 0xFF7B1FA2, 0xFF311B92, "MAGIC FACE|Wow Look", true);
         a("AI Magic", "Magic Face", "ai_face2", "Face Glow", "reels_pop", 1, 12, "rose", "sparkles", "shine", "full", "circle", 0xFFEC407A, 0xFF4A148C, "FACE GLOW|AI Magic", false);
         a("AI Magic", "Magic Face", "ai_face3", "Neon Face", "desi_trap", 2, 12, "vivid", "leak", "flash", null, "rounded", 0xFF00BCD4, 0xFF1A237E, "NEON FACE|Future Look", false);
         a("AI Magic", "AI Baby", "ai_baby4", "AI Cutie Reel", "reels_pop", 6, 15, "aqua", "hearts", "punch", null, "rounded", 0xFF11998E, 0xFF8E2DE2, "AI CUTIE|Magic Reel", false);

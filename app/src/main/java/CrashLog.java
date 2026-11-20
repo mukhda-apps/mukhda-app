@@ -47,6 +47,13 @@ public final class CrashLog {
     public final void write(Context c, Throwable e) {
         Intrinsics.checkNotNullParameter(c, "c");
         Intrinsics.checkNotNullParameter(e, "e");
-        FilesKt.writeText(file(c), "Mukhda 1.1.0 | Android " + Build.VERSION.RELEASE + " | " + Build.MANUFACTURER + " " + Build.MODEL + "\n" + Log.getStackTraceString(e), Charsets.UTF_8);
+        FilesKt.writeText(file(c), "Mukhda " + versionName(c) + " | Android " + Build.VERSION.RELEASE + " | " + Build.MANUFACTURER + " " + Build.MODEL + "\n" + Log.getStackTraceString(e), Charsets.UTF_8);
+    }
+    private static String versionName(android.content.Context c) {
+        try {
+            return String.valueOf(c.getPackageManager().getPackageInfo(c.getPackageName(), 0).versionName);
+        } catch (Exception e) {
+            return "?";
+        }
     }
 }

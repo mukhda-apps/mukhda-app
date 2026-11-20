@@ -52,8 +52,11 @@ public final class Clip {
         this.zoom = f2;
     }
 
-    public Clip(java.lang.String r16, java.lang.String r17, boolean r18, long r19, long r21, long r23, float r25, float r26, int r27, kotlin.jvm.internal.DefaultConstructorMarker r28) {
-        throw new UnsupportedOperationException("Method not decompiled: com.mukhda.editor.Clip.<init>(java.lang.String, java.lang.String, boolean, long, long, long, float, float, int, kotlin.jvm.internal.DefaultConstructorMarker):void");
+    public Clip(java.lang.String id, java.lang.String uri, boolean z, long j, long j2, long j3, float f, float f2, int mask, kotlin.jvm.internal.DefaultConstructorMarker marker) {
+        this((mask & 1) != 0 ? java.util.UUID.randomUUID().toString() : id,
+                uri, z, j, j2, j3,
+                (mask & 64) != 0 ? 1f : f,
+                (mask & 128) != 0 ? 1f : f2);
     }
 
     public final String getId() {
