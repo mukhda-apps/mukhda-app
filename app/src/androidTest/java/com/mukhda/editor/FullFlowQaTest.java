@@ -25,8 +25,10 @@ import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
 
 import org.junit.BeforeClass;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.MethodSorters;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -44,6 +46,7 @@ import java.util.List;
  * (FUSE external-storage views are per-app and invisible to adb root).
  */
 @RunWith(AndroidJUnit4.class)
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class FullFlowQaTest {
 
     private static final String PKG = "com.mukhda.video";
@@ -188,11 +191,15 @@ public class FullFlowQaTest {
         Thread.sleep(2500);
         shot(stage + "_picker");
 
-        // DocumentsUI's Recent view can take a while to index freshly-seeded media,
-        // and the grid re-renders while indexing: wait for a STABLE item count that
-        // covers the need, otherwise switch to the Images root.
-        boolean triedImagesRoot = false;
-        long deadline = System.currentTimeMillis() + 150000;
+        // Recent is flaky on a fresh emulator (indexing churn empties the grid
+        // mid-selection). Go straight to the deterministic Images root instead.
+        clickIfExists(By.desc("Show roots"), 3000);
+        Thread.sleep(1200);
+        clickIfExists(By.text("Images"), 4000);
+        Thread.sleep(2500);
+        shot(stage + "_picker_images");
+
+        long deadline = System.currentTimeMillis() + 90000;
         int lastCount = -1;
         long lastChangeAt = System.currentTimeMillis();
         while (System.currentTimeMillis() < deadline) {
@@ -200,14 +207,7 @@ public class FullFlowQaTest {
             if (c != lastCount) { lastCount = c; lastChangeAt = System.currentTimeMillis(); }
             long stableFor = System.currentTimeMillis() - lastChangeAt;
             if (c >= Math.max(n, 4) && stableFor > 4000) break;
-            if (c >= n && stableFor > 12000) break; // few items but fully settled
-            if (!triedImagesRoot && System.currentTimeMillis() > deadline - 110000) {
-                triedImagesRoot = true;
-                clickIfExists(By.desc("Show roots"), 1500);
-                Thread.sleep(1200);
-                clickIfExists(By.text("Images"), 2500);
-                Thread.sleep(1500);
-            }
+            if (c >= n && stableFor > 10000) break; // few items but fully settled
             Thread.sleep(2000);
         }
         Thread.sleep(1500);
@@ -321,7 +321,18 @@ public class FullFlowQaTest {
         assertNoCrash(specId + "_make2", crashBefore);
 
         // export; poll so an app crash fails fast with evidence instead of an 8-min wait
-        clickIfExists(By.text("Export"), 3000);
+        if (!clickIfExists(By.text("Export"), 5000)) {
+            shot(specId + "_exportbtn_missing");
+            dump(specId + "_exportbtn_missing");
+            fail("Export button not found for " + specId);
+        }
+        boolean dialogShown = device.wait(Until.hasObject(By.textContains("Exporting")), 15000) != null;
+        shot(specId + "_exporting");
+        if (!dialogShown) {
+            String err = readExportError();
+            dump(specId + "_noexportdialog");
+            fail("export dialog never appeared for " + specId + (err.isEmpty() ? "" : " | export_error.txt: " + err));
+        }
         log(specId + ": export started, waiting");
         boolean done = false;
         long exportDeadline = System.currentTimeMillis() + EXPORT_WAIT_MS;
@@ -336,7 +347,8 @@ public class FullFlowQaTest {
         assertNoCrash(specId + "_export", crashBefore);
         if (!done) {
             shot(specId + "_export_timeout");
-            fail("export did not finish for " + specId);
+            String err = readExportError();
+            fail("export did not finish for " + specId + (err.isEmpty() ? "" : " | export_error.txt: " + err));
         }
         Thread.sleep(1500);
         shot(specId + "_done");
@@ -386,6 +398,20 @@ public class FullFlowQaTest {
         log(specId + ": gallery copy verified");
     }
 
+    private static String readExportError() {
+        try {
+            File f = new File(ctx.getFilesDir(), "export_error.txt");
+            if (!f.exists()) return "";
+            byte[] buf = new byte[Math.min((int) f.length(), 4000)];
+            java.io.FileInputStream in = new java.io.FileInputStream(f);
+            int n = in.read(buf);
+            in.close();
+            return n > 0 ? new String(buf, 0, n, "UTF-8") : "";
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
     private static boolean isInGallery(String fileName) {
         try {
             ContentResolver cr = ctx.getContentResolver();
@@ -417,7 +443,7 @@ public class FullFlowQaTest {
 
     /** Her crash path: Home "Photo to Video" -> real picker -> Media.toClips. */
     @Test
-    public void mainPhotoPickerPathDoesNotCrash() throws Exception {
+    public void t1_mainPhotoPickerPathDoesNotCrash() throws Exception {
         String crashBefore = crashLogContent();
         freshStart(new Intent(ctx, MainActivity.class));
         Thread.sleep(3000);
@@ -446,22 +472,22 @@ public class FullFlowQaTest {
     }
 
     @Test
-    public void template1PhotoFacePop() throws Exception {
+    public void t2_template1PhotoFacePop() throws Exception {
         runTemplateFlow("new_facepop", 1, 12000);
     }
 
     @Test
-    public void template2PhotoLoveNames() throws Exception {
+    public void t3_template2PhotoLoveNames() throws Exception {
         runTemplateFlow("love_names", 2, 15000);
     }
 
     @Test
-    public void template4PhotoBirthday() throws Exception {
+    public void t4_template4PhotoBirthday() throws Exception {
         runTemplateFlow("birthday", 4, 15000);
     }
 
     @Test
-    public void template6PhotoGangStory() throws Exception {
+    public void t5_template6PhotoGangStory() throws Exception {
         runTemplateFlow("fr_gang", 6, 15000);
     }
 }

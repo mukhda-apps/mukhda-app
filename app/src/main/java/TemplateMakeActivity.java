@@ -182,6 +182,15 @@ public final class TemplateMakeActivity extends AppCompatActivity {
         }
     }
 
+    private void writeExportError(Throwable t) {
+        try {
+            File f = new File(getFilesDir(), "export_error.txt");
+            java.io.FileOutputStream o = new java.io.FileOutputStream(f, true);
+            o.write((System.currentTimeMillis() + " " + t + "\n" + android.util.Log.getStackTraceString(t) + "\n").getBytes("UTF-8"));
+            o.close();
+        } catch (Throwable ignored) {}
+    }
+
     private void startExport() {
         final TemplateMakeActivity self = this;
         try { if (player != null && player.isPlaying()) player.pause(); } catch (Exception ignored) {}
@@ -199,6 +208,8 @@ public final class TemplateMakeActivity extends AppCompatActivity {
         try {
             composition = Exporter.INSTANCE.buildTemplateComposition(this, project, spec);
         } catch (Throwable t) {
+            android.util.Log.e("MukhdaExport", "composition setup failed", t);
+            writeExportError(t);
             UiKt.safeDismiss(this, pd);
             Toast.makeText(this, "Export setup failed", Toast.LENGTH_LONG).show();
             return;
@@ -220,12 +231,16 @@ public final class TemplateMakeActivity extends AppCompatActivity {
 
                     @Override
                     public void onError(Composition c, ExportResult r, ExportException e) {
+                        android.util.Log.e("MukhdaExport", "transformer error", e);
+                        writeExportError(e);
                         err[0] = e;
                         done.countDown();
                     }
                 });
                 transformer.start(composition, out.getAbsolutePath());
             } catch (Throwable t) {
+                android.util.Log.e("MukhdaExport", "export thread error", t);
+                writeExportError(t);
                 err[0] = t;
                 done.countDown();
             }
@@ -234,6 +249,10 @@ public final class TemplateMakeActivity extends AppCompatActivity {
             boolean ok = false;
             try { ok = done.await(10, TimeUnit.MINUTES); } catch (InterruptedException ignored) {}
             final boolean finished = ok;
+            if (!finished) {
+                android.util.Log.e("MukhdaExport", "export timed out after 10 min");
+                writeExportError(new RuntimeException("export timed out after 10 min"));
+            }
             runOnUiThread(() -> {
                 if (self.isFinishing() || self.isDestroyed()) { ht.quitSafely(); return; }
                 UiKt.safeDismiss(self, pd);
