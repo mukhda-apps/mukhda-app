@@ -2788,10 +2788,7 @@ public final class EditorActivity extends AppCompatActivity {
         }
         preview.release();
         this.cancelJob = true;
-        ProgressDialog progressDialog = this.progress;
-        if (progressDialog != null) {
-            progressDialog.dismiss();
-        }
+        UiKt.safeDismiss(this, this.progress);
     }
 
     @Override

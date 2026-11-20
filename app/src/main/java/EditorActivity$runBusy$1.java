@@ -21,9 +21,9 @@ public final class EditorActivity$runBusy$1 extends Lambda<Unit> implements Func
         this.$d = progressDialog;
     }
 
-    public static final void invoke$lambda$0(ProgressDialog d) {
+    public static final void invoke$lambda$0(EditorActivity a, ProgressDialog d) {
         Intrinsics.checkNotNullParameter(d, "$d");
-        d.dismiss();
+        UiKt.safeDismiss(a, d);
     }
 
     @Override
@@ -42,7 +42,7 @@ public final class EditorActivity$runBusy$1 extends Lambda<Unit> implements Func
             handler.post(new Runnable() {
                 @Override
                 public final void run() {
-                    EditorActivity$runBusy$1.invoke$lambda$0(progressDialog);
+                    EditorActivity$runBusy$1.invoke$lambda$0(this$0, progressDialog);
                 }
             });
         }

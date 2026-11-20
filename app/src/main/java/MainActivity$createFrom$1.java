@@ -41,7 +41,7 @@ public final class MainActivity$createFrom$1 extends Lambda<Unit> implements Fun
         Intrinsics.checkNotNullParameter(clips, "$clips");
         Intrinsics.checkNotNullParameter(this$0, "this$0");
         Intrinsics.checkNotNullParameter(mode, "$mode");
-        d.dismiss();
+        UiKt.safeDismiss(this$0, d);
         if (clips.isEmpty()) {
             Toast.makeText(this$0, "Those files could not be opened", 1).show();
             return;

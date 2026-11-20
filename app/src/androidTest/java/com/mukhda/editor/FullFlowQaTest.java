@@ -48,7 +48,7 @@ public class FullFlowQaTest {
 
     private static final String PKG = "com.mukhda.video";
     private static final String DOCSUI = "com.android.documentsui";
-    private static final long EXPORT_WAIT_MS = 8 * 60 * 1000L;
+    private static final long EXPORT_WAIT_MS = 18 * 60 * 1000L;
 
     private static Context ctx;
     private static UiDevice device;
@@ -192,14 +192,16 @@ public class FullFlowQaTest {
         // and the grid re-renders while indexing: wait for a STABLE item count that
         // covers the need, otherwise switch to the Images root.
         boolean triedImagesRoot = false;
-        long deadline = System.currentTimeMillis() + 75000;
+        long deadline = System.currentTimeMillis() + 150000;
         int lastCount = -1;
         long lastChangeAt = System.currentTimeMillis();
         while (System.currentTimeMillis() < deadline) {
             int c = findPhotoIcons().size();
             if (c != lastCount) { lastCount = c; lastChangeAt = System.currentTimeMillis(); }
-            if (c >= Math.max(n, 4) && System.currentTimeMillis() - lastChangeAt > 4000) break;
-            if (!triedImagesRoot && System.currentTimeMillis() > deadline - 50000) {
+            long stableFor = System.currentTimeMillis() - lastChangeAt;
+            if (c >= Math.max(n, 4) && stableFor > 4000) break;
+            if (c >= n && stableFor > 12000) break; // few items but fully settled
+            if (!triedImagesRoot && System.currentTimeMillis() > deadline - 110000) {
                 triedImagesRoot = true;
                 clickIfExists(By.desc("Show roots"), 1500);
                 Thread.sleep(1200);

@@ -52,6 +52,18 @@ public final class UiKt {
         onClick.invoke();
     }
 
+
+    /** Dismiss a dialog without crashing when its activity is already gone
+     *  (fixes: IllegalArgumentException "not attached to window manager" when an
+     *  export finishes after the user left the screen). */
+    public static final void safeDismiss(android.app.Activity a, android.app.Dialog d) {
+        try {
+            if (d != null && d.isShowing() && a != null && !a.isFinishing() && !a.isDestroyed()) {
+                d.dismiss();
+            }
+        } catch (Throwable ignored) {}
+    }
+
     public static final int dp(Context context, int i) {
         Intrinsics.checkNotNullParameter(context, "<this>");
         return (int) TypedValue.applyDimension(1, i, context.getResources().getDisplayMetrics());

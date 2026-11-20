@@ -145,7 +145,8 @@ public final class TemplateMakeActivity extends AppCompatActivity {
             final List<Bitmap> loaded = TemplatePhotos.load(self, clips, 1080, 1920);
             final List<Bitmap> small = TemplatePhotos.load(self, clips, 120, 214);
             runOnUiThread(() -> {
-                pd.dismiss();
+                UiKt.safeDismiss(self, pd);
+                if (self.isFinishing() || self.isDestroyed()) return;
                 photos = loaded.isEmpty() ? SamplePhotos.get(spec.photoCount) : loaded;
                 preview.setTemplate(spec, photos);
                 preview.play();
@@ -198,7 +199,7 @@ public final class TemplateMakeActivity extends AppCompatActivity {
         try {
             composition = Exporter.INSTANCE.buildTemplateComposition(this, project, spec);
         } catch (Throwable t) {
-            pd.dismiss();
+            UiKt.safeDismiss(this, pd);
             Toast.makeText(this, "Export setup failed", Toast.LENGTH_LONG).show();
             return;
         }
@@ -234,7 +235,8 @@ public final class TemplateMakeActivity extends AppCompatActivity {
             try { ok = done.await(10, TimeUnit.MINUTES); } catch (InterruptedException ignored) {}
             final boolean finished = ok;
             runOnUiThread(() -> {
-                pd.dismiss();
+                if (self.isFinishing() || self.isDestroyed()) { ht.quitSafely(); return; }
+                UiKt.safeDismiss(self, pd);
                 ht.quitSafely();
                 if (!finished || err[0] != null || !out.exists() || out.length() == 0) {
                     Toast.makeText(self, "Export nahi ho paya. Dobara try karo.", Toast.LENGTH_LONG).show();
